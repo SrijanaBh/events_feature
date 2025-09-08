@@ -1,5 +1,136 @@
 import 'package:flutter/material.dart';
 
+class EventsSummaryScreen extends StatelessWidget {
+  final Map<String, dynamic> event;
+  final int ticketCount;
+  final double totalPrice;
+
+  const EventsSummaryScreen({
+    super.key,
+    required this.event,
+    required this.ticketCount,
+    required this.totalPrice,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: const Color.fromARGB(255, 4, 122, 43),
+        title: const Text(
+          "Ticket  Copy",
+          style: TextStyle(
+            fontSize: 30,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Event Title
+            Text(
+              event["title"] ?? "Event",
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Event Date & Time
+            Text(
+              '${event["date"] ?? ""} | ${event["time"] ?? ""}',
+              style: const TextStyle(color: Colors.white60, fontSize: 16),
+            ),
+            const SizedBox(height: 30),
+
+            // Ticket Summary
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Tickets:",
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  "$ticketCount",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            // Total Price
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Total Price:",
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  "₹$totalPrice",
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.greenAccent,
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
+
+            // Done / Close Button
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.popUntil(context, (route) => route.isFirst);
+                },
+                child: const Text(
+                  "Done",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+
+
+/*import 'package:flutter/material.dart';
+
 class EventSummaryScreen extends StatefulWidget {
   final Map<String, String> event;
   final Map<String, int> ticketTypeCounts;
@@ -219,7 +350,7 @@ class _EventSummaryScreenState extends State<EventSummaryScreen> {
     );
   }
 }
-
+*/
 
 
 /*import 'package:flutter/material.dart';

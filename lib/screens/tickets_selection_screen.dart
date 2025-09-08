@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:events_feature/screens/events_summary_screen.dart';
+import 'package:flutter/material.dart';
 
 class TicketSelectionScreen extends StatefulWidget {
-  final Map<String, String> event;
+  final Map<String, dynamic> event;
 
   const TicketSelectionScreen({super.key, required this.event});
 
@@ -11,102 +11,145 @@ class TicketSelectionScreen extends StatefulWidget {
 }
 
 class _TicketSelectionScreenState extends State<TicketSelectionScreen> {
-  int singleCount = 0;
-  int coupleCount = 0;
-
-  void incrementSingle() => setState(() => singleCount++);
-  void decrementSingle() {
-    if (singleCount > 0) setState(() => singleCount--);
-  }
-
-  void incrementCouple() => setState(() => coupleCount++);
-  void decrementCouple() {
-    if (coupleCount > 0) setState(() => coupleCount--);
-  }
-
-  void removeSingle() => setState(() => singleCount = 0);
-  void removeCouple() => setState(() => coupleCount = 0);
+  int _ticketCount = 1;
 
   @override
   Widget build(BuildContext context) {
+    final double pricePerTicket =
+        double.tryParse(widget.event["price"].toString()) ?? 0;
+    final double totalPrice = _ticketCount * pricePerTicket;
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Select Tickets")),
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.grey[900],
+        title: Text(
+          "Book Tickets",
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+      ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _ticketRow(
-              title: "Single",
-              count: singleCount,
-              onIncrement: incrementSingle,
-              onDecrement: decrementSingle,
-              onRemove: removeSingle,
+            // Event title
+            Text(
+              widget.event["title"] ?? "Event",
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
-            const SizedBox(height: 16),
-            _ticketRow(
-              title: "Couple",
-              count: coupleCount,
-              onIncrement: incrementCouple,
-              onDecrement: decrementCouple,
-              onRemove: removeCouple,
+            const SizedBox(height: 10),
+
+            // Ticket selector
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Number of Tickets",
+                  style: TextStyle(color: Colors.white70, fontSize: 16),
+                ),
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        if (_ticketCount > 1) {
+                          setState(() => _ticketCount--);
+                        }
+                      },
+                      icon: const Icon(
+                        Icons.remove_circle,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Text(
+                      '$_ticketCount',
+                      style: const TextStyle(fontSize: 18, color: Colors.white),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        setState(() => _ticketCount++);
+                      },
+                      icon: const Icon(Icons.add_circle, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ],
             ),
+
+            const SizedBox(height: 30),
+
+            // Price summary
+            Text(
+              "Price per Ticket: ₹$pricePerTicket",
+              style: const TextStyle(color: Colors.white54),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              "Total: ₹$totalPrice",
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.greenAccent,
+              ),
+            ),
+
             const Spacer(),
-            ElevatedButton(
-              onPressed: (singleCount == 0 && coupleCount == 0)
-                  ? null
-                  : () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => EventSummaryScreen(
-                            event: widget.event,
-                            ticketTypeCounts: {
-                              "Single": singleCount,
-                              "Couple": coupleCount,
-                            },
-                          ),
+
+            // Proceed Button
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                onPressed: () {
+                  // Placeholder: Add payment logic here
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => EventsSummaryScreen(
+                        event: widget.event,
+                        ticketCount: _ticketCount,
+                        totalPrice: totalPrice,
+                      ),
+                    ),
+                  );
+                  /*showDialog(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      backgroundColor: Colors.grey[900],
+                      title: const Text("Booking Confirmed", style: TextStyle(color: Colors.white)),
+                      content: Text(
+                        "You've booked $_ticketCount ticket(s) for ₹$totalPrice.",
+                        style: const TextStyle(color: Colors.white70),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text("OK", style: TextStyle(color: Colors.redAccent)),
                         ),
-                      );
-                    },
-              child: const Text("Continue"),
+                      ],
+                    ),
+                  );*/
+                },
+                child: const Text(
+                  "Proceed to Payment",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
             ),
           ],
         ),
       ),
     );
   }
-
-  Widget _ticketRow({
-    required String title,
-    required int count,
-    required VoidCallback onIncrement,
-    required VoidCallback onDecrement,
-    required VoidCallback onRemove,
-  }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(title, style: const TextStyle(fontSize: 18)),
-        Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.remove_circle_outline),
-              onPressed: count > 0 ? onDecrement : null,
-            ),
-            Text(count.toString(), style: const TextStyle(fontSize: 16)),
-            IconButton(
-              icon: const Icon(Icons.add_circle_outline),
-              onPressed: onIncrement,
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline, color: Colors.red),
-              onPressed: count > 0 ? onRemove : null,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
 }
-
-
