@@ -1,4 +1,6 @@
 import 'dart:convert';
+//import 'package:events_feature/controllers/typing_logic.dart';
+import 'package:events_feature/controllers/looping_appbar_title.dart';
 import 'package:events_feature/screens/events_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -7,8 +9,6 @@ class EventsHomeScreen extends StatelessWidget {
   const EventsHomeScreen({super.key});
 
   Future<List<dynamic>> fetchEventsData() async {
-    print("------22222222222222222-----------");
-
     try {
       final url =
           'https://white-labels-app-server.vercel.app/api/events/list?club_id=222';
@@ -19,8 +19,6 @@ class EventsHomeScreen extends StatelessWidget {
               "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMDk2MywidXNlcl9lbWFpbCI6InJhbXlhQGNsdWJyLmluIiwidXNlcl9tb2JpbGUiOiI5MTk1NTMxMzAyNjEiLCJ1c2VyX2NsdWJfaWQiOjIyMiwiaWF0IjoxNzU3MTQwMjM4LCJleHAiOjE3NTc3NDUwMzh9.Jy45T-nOpV8jUhGLL_MPz3Zxw-vjb-kpFx89SmzWjTM",
         },
       );
-      print("-----------------");
-      print(response.statusCode);
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
@@ -42,14 +40,24 @@ class EventsHomeScreen extends StatelessWidget {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.grey[900],
-        title: const Text(
-          "Happening Events!",
-          style: TextStyle(
+        leading: Padding(padding: const EdgeInsets.all(8.0)),
+        title: const LoopingTypingAppBarTitle(
+          messages: [
+            "Happening Events !",
+            "Explore More !",
+            "Don't Miss Out !",
+          ],
+          typingSpeed: Duration(microseconds: 5),
+        ),
+        //const TypingAppBarTitle(fullText: "Happening Events!"),
+        //const Text(
+        //"Happening Events!",
+        /*style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
-        ),
+        ),*/
       ),
       body: FutureBuilder<List<dynamic>>(
         future: fetchEventsData(),
@@ -60,7 +68,7 @@ class EventsHomeScreen extends StatelessWidget {
             return Center(
               child: Text(
                 "Error: ${snapshot.error}",
-                style: const TextStyle(color: Colors.red),
+                style: const TextStyle(color: Colors.green),
               ),
             );
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -73,7 +81,115 @@ class EventsHomeScreen extends StatelessWidget {
           }
 
           final events = snapshot.data!;
-          return Padding(
+          return SizedBox(
+            height: MediaQuery.of(context).size.height * 0.8,
+            child: PageView.builder(
+              itemCount: events.length,
+              controller: PageController(
+                viewportFraction: 0.95,
+              ), // Adjust for slight margin
+              itemBuilder: (context, index) {
+                final event = events[index];
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => EventDetailsScreen(event: event),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.green.withOpacity(0.5),
+                          blurRadius: 10,
+                          spreadRadius: 3,
+                          offset: const Offset(5, 6),
+                          //color: Colors.grey.shade300,
+                          //blurRadius: 10,
+                          //spreadRadius: 2,
+                          //offset: const Offset(4, 4),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Stack(
+                        children: [
+                          Image.network(
+                            event["img_path"] ?? '',
+                            height: 620,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(
+                                  height: 400,
+                                  width: double.infinity,
+                                  color: Colors.grey[700],
+                                  child: const Icon(
+                                    Icons.broken_image,
+                                    color: Colors.white,
+                                    size: 40,
+                                  ),
+                                ),
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.black.withOpacity(0.7),
+                                  ],
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    event["title"] ?? "No Title",
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    event["slug"] ?? "",
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/*Padding(
             padding: const EdgeInsets.symmetric(vertical: 20),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -110,7 +226,7 @@ class EventsHomeScreen extends StatelessWidget {
                             // Background Image
                             Image.network(
                               event["img_path"] ?? '',
-                              height: 400,
+                              height: 590,
                               width: double.infinity,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) =>
@@ -177,7 +293,7 @@ class EventsHomeScreen extends StatelessWidget {
       ),
     );
   }
-}
+}*/
 
 /*return ListView.builder(
             itemCount: events.length,

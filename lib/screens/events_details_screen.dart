@@ -1,3 +1,4 @@
+//import 'package:events_feature/screens/events_summary_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:events_feature/screens/tickets_selection_screen.dart';
 
@@ -12,12 +13,10 @@ class EventDetailsScreen extends StatelessWidget {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.grey[900],
+        iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
           event["title"] ?? "Event Details",
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
         ),
       ),
       body: Column(
@@ -69,24 +68,22 @@ class EventDetailsScreen extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
                       event["slug"] ?? "",
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey,
-                      ),
+                      style: const TextStyle(fontSize: 16, color: Colors.grey),
                     ),
                   ),
 
                   const SizedBox(height: 16),
 
                   // Description
-                  if (event["description"] != null)
+                  if (event["from_date"] != null)
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
-                        event["description"],
+                        'Event Starts On : '
+                        '${event["from_date"]}',
                         style: const TextStyle(
                           fontSize: 16,
-                          color: Colors.white70,
+                          color: Colors.green,
                         ),
                       ),
                     ),
@@ -94,14 +91,22 @@ class EventDetailsScreen extends StatelessWidget {
                   const SizedBox(height: 16),
 
                   // Optional: Date and Time
-                  if (event.containsKey("date") || event.containsKey("time"))
+                  if (event.containsKey("to_date") ||
+                      event.containsKey("start_time") ||
+                      event.containsKey("end_time"))
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
-                        '${event["date"] ?? ""} ${event["time"] ?? ""}',
+                        'Event closes By : '
+                        '${event["to_date"] ?? ""}'
+                        '       '
+                        "Timings : "
+                        '${event["start_time"] ?? ""}'
+                        '  -  '
+                        '${event["end_time"]}',
                         style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.white54,
+                          fontSize: 16,
+                          color: Colors.green,
                         ),
                       ),
                     ),
@@ -120,20 +125,22 @@ class EventDetailsScreen extends StatelessWidget {
               height: 50,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
+                  backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => TicketSelectionScreen(event: event),
-                    ),
-                  );
-                },
+                onPressed:
+                    () //=> _showTicketBookingSheet(context),
+                    {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => TicketSelectionScreen(event: event),
+                        ),
+                      );
+                    },
                 child: const Text(
                   'Book Tickets',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -147,9 +154,139 @@ class EventDetailsScreen extends StatelessWidget {
   }
 }
 
+/*void _showTicketBookingSheet(BuildContext context) {
+    int _ticketCount = 1;
 
-                  
+    final double pricePerTicket = 100;
+    final double totalPrice = _ticketCount * pricePerTicket;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.grey[900],
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      isScrollControlled: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            double totalPrice = _ticketCount * pricePerTicket;
 
+            return Padding(
+              padding: MediaQuery.of(context).viewInsets,
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Book Tickets',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Tickets:",
+                          style: TextStyle(fontSize: 18, color: Colors.white70),
+                        ),
+                        Row(
+                          children: [
+                            IconButton(
+                              onPressed: () {
+                                if (_ticketCount > 1) {
+                                  setState(() => _ticketCount--);
+                                }
+                              },
+                              icon: const Icon(
+                                Icons.remove,
+                                color: Colors.white,
+                              ),
+                            ),
+                            Text(
+                              "$_ticketCount",
+                              style: const TextStyle(
+                                fontSize: 18,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => setState(() => _ticketCount++),
+                              icon: const Icon(Icons.add, color: Colors.white),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Total:",
+                          style: TextStyle(fontSize: 18, color: Colors.white70),
+                        ),
+                        Text(
+                          "₹${totalPrice.toStringAsFixed(2)}",
+                          style: const TextStyle(
+                            fontSize: 18,
+                            color: Colors.greenAccent,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context); // Close bottom sheet
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => EventsSummaryScreen(
+                                event: event,
+                                ticketCount: _ticketCount,
+                                totalPrice: totalPrice,
+                              ),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          "Confirm Booking",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+*/
 /*import 'package:flutter/material.dart';
 import 'package:events_feature/screens/tickets_selection_screen.dart';
 

@@ -18,6 +18,7 @@ class EventsSummaryScreen extends StatelessWidget {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: const Color.fromARGB(255, 4, 122, 43),
+        iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
           "Ticket  Copy",
           style: TextStyle(
@@ -104,7 +105,7 @@ class EventsSummaryScreen extends StatelessWidget {
               height: 50,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
+                  backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),

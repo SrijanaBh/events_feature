@@ -23,6 +23,7 @@ class _TicketSelectionScreenState extends State<TicketSelectionScreen> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.grey[900],
+        iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
           "Book Tickets",
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -73,7 +74,7 @@ class _TicketSelectionScreenState extends State<TicketSelectionScreen> {
                       onPressed: () {
                         setState(() => _ticketCount++);
                       },
-                      icon: const Icon(Icons.add_circle, color: Colors.white),
+                      icon: const Icon(Icons.add_circle, color: Colors.green),
                     ),
                   ],
                 ),
@@ -105,7 +106,7 @@ class _TicketSelectionScreenState extends State<TicketSelectionScreen> {
               height: 50,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
+                  backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
