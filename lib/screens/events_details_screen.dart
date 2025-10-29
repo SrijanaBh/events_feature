@@ -1,497 +1,800 @@
-//import 'package:events_feature/screens/events_summary_screen.dart';
+import 'dart:convert';
+import 'package:events_feature/models/event_models.dart';
+import 'package:events_feature/utils/session_manager.dart'; // ✅ Import SessionManager
 import 'package:flutter/material.dart';
-import 'package:events_feature/screens/tickets_selection_screen.dart';
+import 'package:http/http.dart' as http;
+import 'tickets_selection_screen.dart';
+import 'package:flutter_html/flutter_html.dart';
 
-class EventDetailsScreen extends StatelessWidget {
-  final Map<String, dynamic> event;
+class EventDetailsScreen extends StatefulWidget {
+  final int eventId;
 
-  const EventDetailsScreen({super.key, required this.event});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.grey[900],
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: Text(
-          event["title"] ?? "Event Details",
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-        ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Event Image
-                  if (event["img_path"] != null &&
-                      event["img_path"].toString().isNotEmpty)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        event["img_path"],
-                        width: double.infinity,
-                        height: 250,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          height: 250,
-                          color: Colors.grey[300],
-                          child: const Center(
-                            child: Icon(Icons.broken_image, size: 40),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                  const SizedBox(height: 16),
-
-                  // Title
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      event["title"] ?? "No Title",
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // Slug / Subtitle
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      event["slug"] ?? "",
-                      style: const TextStyle(fontSize: 16, color: Colors.grey),
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Description
-                  if (event["from_date"] != null)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'Event Starts On : '
-                        '${event["from_date"]}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.green,
-                        ),
-                      ),
-                    ),
-
-                  const SizedBox(height: 16),
-
-                  // Optional: Date and Time
-                  if (event.containsKey("to_date") ||
-                      event.containsKey("start_time") ||
-                      event.containsKey("end_time"))
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'Event closes By : '
-                        '${event["to_date"] ?? ""}'
-                        '       '
-                        "Timings : "
-                        '${event["start_time"] ?? ""}'
-                        '  -  '
-                        '${event["end_time"]}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.green,
-                        ),
-                      ),
-                    ),
-
-                  const SizedBox(height: 24),
-                ],
-              ),
-            ),
-          ),
-
-          // Book Tickets Button
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                onPressed:
-                    () //=> _showTicketBookingSheet(context),
-                    {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => TicketSelectionScreen(event: event),
-                        ),
-                      );
-                    },
-                child: const Text(
-                  'Book Tickets',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/*void _showTicketBookingSheet(BuildContext context) {
-    int _ticketCount = 1;
-
-    final double pricePerTicket = 100;
-    final double totalPrice = _ticketCount * pricePerTicket;
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.grey[900],
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      isScrollControlled: true,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            double totalPrice = _ticketCount * pricePerTicket;
-
-            return Padding(
-              padding: MediaQuery.of(context).viewInsets,
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'Book Tickets',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          "Tickets:",
-                          style: TextStyle(fontSize: 18, color: Colors.white70),
-                        ),
-                        Row(
-                          children: [
-                            IconButton(
-                              onPressed: () {
-                                if (_ticketCount > 1) {
-                                  setState(() => _ticketCount--);
-                                }
-                              },
-                              icon: const Icon(
-                                Icons.remove,
-                                color: Colors.white,
-                              ),
-                            ),
-                            Text(
-                              "$_ticketCount",
-                              style: const TextStyle(
-                                fontSize: 18,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () => setState(() => _ticketCount++),
-                              icon: const Icon(Icons.add, color: Colors.white),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          "Total:",
-                          style: TextStyle(fontSize: 18, color: Colors.white70),
-                        ),
-                        Text(
-                          "₹${totalPrice.toStringAsFixed(2)}",
-                          style: const TextStyle(
-                            fontSize: 18,
-                            color: Colors.greenAccent,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.pop(context); // Close bottom sheet
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => EventsSummaryScreen(
-                                event: event,
-                                ticketCount: _ticketCount,
-                                totalPrice: totalPrice,
-                              ),
-                            ),
-                          );
-                        },
-                        child: const Text(
-                          "Confirm Booking",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-}
-*/
-/*import 'package:flutter/material.dart';
-import 'package:events_feature/screens/tickets_selection_screen.dart';
-
-
-
-class EventDetailsScreen extends StatelessWidget {
-  final Map<String, String> event;
-
-  const EventDetailsScreen({super.key, required this.event});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.grey[900],
-        title: Text(
-          event["title"] ?? "Event Details",
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Event Image
-            if (event["img_path"] != null && event["img_path"].toString().isNotEmpty)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  event["img_path"],
-                  width: double.infinity,
-                  height: 250,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    height: 250,
-                    color: Colors.grey[300],
-                    child: const Center(
-                      child: Icon(Icons.broken_image, size: 40),
-                    ),
-                  ),
-                ),
-              ),
-            const SizedBox(height: 16),
-
-            // Title
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: SizedBox(
-        width: double.infinity,
-        height: 50,
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.redAccent,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => TicketSelectionScreen(event: event),
-              ),
-            );
-          },
-          child: const Text(
-            'Book Tickets',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-        ),
-      ),
-    ),
-  ],
-),
-  }
-}
-
-              /*child: Text(
-                event["title"] ?? "No Title",
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            // Slug / Subtitle
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                event["slug"] ?? "",
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Description
-            if (event["description"] != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  event["description"],
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Colors.white70,
-                  ),
-                ),
-              ),
-
-            const SizedBox(height: 16),
-
-            // Optional: Date and Time (if you have fields like "date", "time", etc.)
-            if (event.containsKey("date") || event.containsKey("time"))
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  '${event["date"] ?? ""} ${event["time"] ?? ""}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.white54,
-                  ),
-                ),
-              ),
-
-            const SizedBox(height: 30),
-          ],
-        ),
-      ),
-    );
-  }
-}
-*/
-
-
-
-/*class EventDetailsScreen extends StatefulWidget {
-  final Map<String, String> event;
-
-  const EventDetailsScreen({super.key, required this.event});
+  const EventDetailsScreen({super.key, required this.eventId});
 
   @override
   State<EventDetailsScreen> createState() => _EventDetailsScreenState();
 }
 
 class _EventDetailsScreenState extends State<EventDetailsScreen> {
-  bool? _isBooked = false;
+  EventModel? _event;
+  bool _isLoading = true;
+  String? authToken;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTokenAndFetchEvent();
+  }
+
+  /// 🔹 Load token first, then fetch event details
+  Future<void> _loadTokenAndFetchEvent() async {
+    final session = SessionManager();
+    await session.loadSession();
+
+    setState(() {
+      authToken = session.authToken;
+    });
+
+    debugPrint("🔑 Loaded Token for EventDetails: $authToken");
+
+    if (authToken == null || authToken!.isEmpty) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    await fetchEventDetails();
+  }
+
+  /// 🔹 Fetch Event Details Dynamically
+  Future<void> fetchEventDetails() async {
+    try {
+      final url =
+          "https://white-labels-app-server.vercel.app/api/events/getEventById?event_id=${widget.eventId}";
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {"x-auth-token": authToken!},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body)["data"];
+        setState(() {
+          _event = EventModel.fromJson(data);
+          _isLoading = false;
+        });
+      } else {
+        throw Exception(
+          "Failed to load event details (${response.statusCode})",
+        );
+      }
+    } catch (e) {
+      debugPrint("❌ Error fetching event: $e");
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: CircularProgressIndicator(color: Colors.green)),
+      );
+    }
+
+    if (authToken == null || authToken!.isEmpty) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Text(
+            "Please log in to view event details.",
+            style: TextStyle(color: Colors.white, fontSize: 16),
+          ),
+        ),
+      );
+    }
+
+    if (_event == null) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Text(
+            "Failed to load event details.",
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+    }
+
+    final event = _event!;
+
     return Scaffold(
-      appBar: AppBar(title: Text(widget.event['title']!)),
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        title: Text(event.title),
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+      ),
       body: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Fixed height image to avoid overflow
+            // --- Image Section ---
             Container(
-              height: 250,
-              width: double.infinity,
-              child: Image.asset(widget.event['image']!, fit: BoxFit.cover),
-            ),
-            const SizedBox(height: 16),
-            Center(
-              child: Text(
-                '${widget.event['date']} | ${widget.event['time']}',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
+              margin: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.green.withOpacity(0.5),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Image.network(
+                  event.imgPath,
+                  width: double.infinity,
+                  height: 350,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    height: 350,
+                    color: Colors.grey[800],
+                    child: const Icon(
+                      Icons.broken_image,
+                      color: Colors.white,
+                      size: 50,
+                    ),
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+
+            const SizedBox(height: 10),
+
+            // --- Slug ---
+            if (event.slug.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
+                  event.slug,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 16,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+
+            const SizedBox(height: 16),
+
+            // --- Dates ---
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.calendar_today,
+                    color: Colors.green,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    "${event.fromDate.toLocal().toString().split(' ')[0]} → ${event.toDate.toLocal().toString().split(' ')[0]}",
+                    style: const TextStyle(
+                      color: Colors.green,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // --- Time ---
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                children: [
+                  const Icon(Icons.access_time, color: Colors.green, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    "${event.startTime} - ${event.endTime}",
+                    style: const TextStyle(
+                      color: Colors.green,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // --- Venue ---
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                "VENUE:",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
+            ),
+            if (event.venue.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.location_on,
+                      color: Colors.green,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        event.venue,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            const SizedBox(height: 20),
+
+            // --- Description ---
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                "DESCRIPTION:",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
+            ),
+            if (event.description.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Html(
+                  data: event.description,
+                  style: {
+                    "body": Style(
+                      color: Colors.white70,
+                      fontSize: FontSize(15),
+                      lineHeight: LineHeight(1.4),
+                      textAlign: TextAlign.justify,
+                      fontFamily: 'Roboto',
+                    ),
+                  },
+                ),
+              ),
+
+            const SizedBox(height: 20),
+
+            // --- Artists ---
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                "ARTISTS:",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
+            ),
+            ListTile(
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  _artistButton("Artist 1"),
+                  const SizedBox(width: 20),
+                  _artistButton("Artist 2"),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // --- Images ---
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                "IMAGES:",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildImageRow(context),
+
+            const SizedBox(height: 30),
+
+            // --- Book Now Button ---
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.black,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(20),
+                      ),
+                    ),
+                    builder: (context) => SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.8,
+                      child: TicketSelectionScreen(event: event),
+                    ),
+                  );
+                },
+                child: const Text(
+                  "Book Now",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 🔹 Small reusable widgets
+
+  Widget _artistButton(String name) {
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        //backgroundColor: Colors.green,
+        foregroundColor: Colors.white,
+        shadowColor: Colors.transparent,
+        side: const BorderSide(color: Colors.white70),
+      ),
+      onPressed: () {},
+      child: Text(name),
+    );
+  }
+
+  Widget _buildImageRow(BuildContext context) {
+    final images = [
+      'assets/priscilla-du-preez-W3SEyZODn8U-unsplash.jpg',
+      'assets/pablo-heimplatz-ZODcBkEohk8-unsplash.jpg',
+      'assets/al-elmes-ULHxWq8reao-unsplash.jpg',
+    ];
+
+    final imageWidth = (MediaQuery.of(context).size.width - 64) / 3;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: images
+            .map(
+              (path) => ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.asset(
+                  path,
+                  width: imageWidth,
+                  height: 100,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+}
+
+/*
+import 'dart:convert';
+import 'package:events_feature/models/event_models.dart';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'tickets_selection_screen.dart';
+import 'package:flutter_html/flutter_html.dart';
+
+class EventDetailsScreen extends StatefulWidget {
+  final int eventId;
+
+  const EventDetailsScreen({super.key, required this.eventId});
+
+  @override
+  State<EventDetailsScreen> createState() => _EventDetailsScreenState();
+}
+
+class _EventDetailsScreenState extends State<EventDetailsScreen> {
+  EventModel? _event;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchEventDetails();
+  }
+
+  Future<void> fetchEventDetails() async {
+    try {
+      final url =
+          "https://white-labels-app-server.vercel.app/api/events/getEventById?event_id=${widget.eventId}";
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          "x-auth-token":
+              "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMTAwNywidXNlcl9lbWFpbCI6InJpcHdpbmtsZTVAZ21haWwuY29tIiwidXNlcl9tb2JpbGUiOiI5MTkxNzcyNzIxMzMiLCJ1c2VyX2NsdWJfaWQiOjIyMiwiaWF0IjoxNzYwMzMzMzEzLCJleHAiOjE3NjA5MzgxMTN9.a_bN5P_xKkNYtitRRfnRhBiz5o94CkQfX7OFyYiB9pE",
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body)["data"];
+        setState(() {
+          _event = EventModel.fromJson(data);
+          _isLoading = false;
+        });
+      } else {
+        throw Exception("Failed to load event details");
+      }
+    } catch (e) {
+      debugPrint("Error fetching event: $e");
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_event == null) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Text(
+            "Failed to load event",
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+    }
+
+    final event = _event!;
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        title: Text(event.title),
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image
+            Container(
+              margin: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.green.withOpacity(0.5),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Image.network(
+                  event.imgPath,
+                  width: double.infinity,
+                  height: 350,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            // Slug
+            if (event.slug.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
+                  event.slug,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 16,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+
+            const SizedBox(height: 16),
+
+            // Dates
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.calendar_today,
+                    color: Colors.green,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    "${event.fromDate.toLocal().toString().split(' ')[0]} → ${event.toDate.toLocal().toString().split(' ')[0]}",
+                    style: const TextStyle(
+                      color: Colors.green,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // Time
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                children: [
+                  const Icon(Icons.access_time, color: Colors.green, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    "${event.startTime} - ${event.endTime}",
+                    style: const TextStyle(
+                      color: Colors.green,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 8),
+            Text(
+              "   VENUE :",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+            ),
+            const SizedBox(width: 8),
+
+            // Venue
+            if (event.venue.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.location_on,
+                      color: Colors.green,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+
+                    Expanded(
+                      child: Text(
+                        event.venue,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            const SizedBox(height: 16),
+            Text(
+              "   DESCRIPTION :",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+            ),
+            const SizedBox(width: 8),
+
+            if (event.description.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Html(
+                  data: event.description,
+                  style: {
+                    "body": Style(
+                      color: Colors.white70,
+                      fontSize: FontSize(15),
+                      lineHeight: LineHeight(1.4),
+                      textAlign: TextAlign.justify,
+                      fontFamily: 'Roboto',
+                    ),
+                    "p": Style(margin: Margins.only(bottom: 8)),
+                  },
+                ),
+              ),
+
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                "ARTISTS",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            ListTile(
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green, // transparent background
+                      foregroundColor: Colors.white, // text color
+                      shadowColor: Colors.transparent, // remove shadow
+                      side: const BorderSide(
+                        color: Colors.grey,
+                      ), // optional border
+                    ),
+                    onPressed: () {
+                      // TODO: handle button press
+                    },
+                    child: const Text("Artist 1"),
+                  ),
+                  const SizedBox(width: 30),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      shadowColor: Colors.transparent,
+                      side: const BorderSide(color: Colors.grey),
+                    ),
+                    onPressed: () {
+                      // TODO: handle button press
+                    },
+                    child: const Text("Artist 2"),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                "IMAGES",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: RadioListTile<bool>(
-                title: const Text("Book Now"),
-                value: true,
-                groupValue: _isBooked,
-                onChanged: (val) {
-                  setState(() {
-                    _isBooked = val;
-                  });
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // First image
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.asset(
+                      'assets/priscilla-du-preez-W3SEyZODn8U-unsplash.jpg',
+                      width:
+                          (MediaQuery.of(context).size.width - 64) /
+                          3, // divide space equally
+                      height: 100,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  // Second image
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.asset(
+                      'assets/pablo-heimplatz-ZODcBkEohk8-unsplash.jpg',
+                      width: (MediaQuery.of(context).size.width - 64) / 3,
+                      height: 100,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  // Third image
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.asset(
+                      'assets/al-elmes-ULHxWq8reao-unsplash.jpg',
+                      width: (MediaQuery.of(context).size.width - 64) / 3,
+                      height: 100,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
-                  if (val == true) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            TicketSelectionScreen(event: widget.event),
+            const SizedBox(height: 30),
+
+            // Book Now Button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.black,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(20),
                       ),
-                    );
-                  }
+                    ),
+                    builder: (context) {
+                      return SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.8,
+                        child: TicketSelectionScreen(event: event),
+                      );
+                    },
+                  );
                 },
+                child: const Text(
+                  "Book Now",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
           ],
@@ -500,5 +803,291 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 }
+
 */
+
+/*
+import 'dart:convert';
+import 'package:events_feature/utils/date_time_format.dart';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+import 'package:events_feature/models/event_models.dart';
+import 'tickets_selection_screen.dart';
+
+class EventDetailsScreen extends StatefulWidget {
+  final int eventId; // <-- accept eventId instead of full EventModel
+
+  const EventDetailsScreen({super.key, required this.eventId});
+
+  @override
+  State<EventDetailsScreen> createState() => _EventDetailsScreenState();
+}
+
+class _EventDetailsScreenState extends State<EventDetailsScreen> {
+  EventModel? _event;
+  bool _isLoading = true;
+  bool _bookNow = false;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchEventDetails();
+  }
+
+  Future<void> fetchEventDetails() async {
+    try {
+      final url =
+          "https://white-labels-app-server.vercel.app/api/events/getEventById?event_id=${widget.eventId}";
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          "x-auth-token":
+              "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMTAwNywidXNlcl9lbWFpbCI6InJpcHdpbmtsZTVAZ21haWwuY29tIiwidXNlcl9tb2JpbGUiOiI5MTkxNzcyNzIxMzMiLCJ1c2VyX2NsdWJfaWQiOjIyMiwiaWF0IjoxNzU5NDg3MzEzLCJleHAiOjE3NjAwOTIxMTN9.mdkoAHAk1fXGC0hYlRUBNfTbLflKWNbu1oUEbp5rNZs",
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body)["data"];
+        setState(() {
+          _event = EventModel.fromJson(data);
+          _isLoading = false;
+        });
+      } else {
+        throw Exception("Failed to load event details");
+      }
+    } catch (e) {
+      debugPrint("Error fetching event: $e");
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (_event == null) {
+      return const Scaffold(body: Center(child: Text("Failed to load event")));
+    }
+
+    final event = _event!;
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        title: Text(event.title),
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              margin: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20), // curved border
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.green.withOpacity(0.5), // green shadow
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                    offset: const Offset(0, 5), // shadow position
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(
+                  20,
+                ), // match same border radius
+                child: Image.network(
+                  event.imgPath,
+                  width: double.infinity,
+                  height: 350,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // From - To Date
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                " ${event.fromDate.toLocal().toString().split(' ')[0]} "
+                " ${event.toDate.toLocal().toString().split(' ')[0]}",
+                style: const TextStyle(
+                  color: Colors.green,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // Time
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                " ${event.startTime} - ${event.endTime}",
+                style: const TextStyle(
+                  color: Colors.green,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                "ARTISTS",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            //const SizedBox(height: 20),
+            ListTile(
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green, // transparent background
+                      foregroundColor: Colors.white, // text color
+                      shadowColor: Colors.transparent, // remove shadow
+                      side: const BorderSide(
+                        color: Colors.grey,
+                      ), // optional border
+                    ),
+                    onPressed: () {
+                      // TODO: handle button press
+                    },
+                    child: const Text("Artist 1"),
+                  ),
+                  const SizedBox(width: 30),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      shadowColor: Colors.transparent,
+                      side: const BorderSide(color: Colors.grey),
+                    ),
+                    onPressed: () {
+                      // TODO: handle button press
+                    },
+                    child: const Text("Artist 2"),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                "IMAGES",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // First image
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.asset(
+                      'assets/priscilla-du-preez-W3SEyZODn8U-unsplash.jpg',
+                      width:
+                          (MediaQuery.of(context).size.width - 64) /
+                          3, // divide space equally
+                      height: 100,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  // Second image
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.asset(
+                      'assets/pablo-heimplatz-ZODcBkEohk8-unsplash.jpg',
+                      width: (MediaQuery.of(context).size.width - 64) / 3,
+                      height: 100,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  // Third image
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.asset(
+                      'assets/al-elmes-ULHxWq8reao-unsplash.jpg',
+                      width: (MediaQuery.of(context).size.width - 64) / 3,
+                      height: 100,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green, // button background color
+                  foregroundColor: Colors.white, // text color
+                  minimumSize: const Size(
+                    double.infinity,
+                    50,
+                  ), // full width button
+                ),
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true, // full screen height if needed
+                    backgroundColor:
+                        Colors.black, // matches scaffold background
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(20),
+                      ),
+                    ),
+                    builder: (context) {
+                      return SizedBox(
+                        height:
+                            MediaQuery.of(context).size.height *
+                            0.8, // 80% of screen
+                        child: TicketSelectionScreen(
+                          event: event,
+                        ), // your ticket selection screen
+                      );
+                    },
+                  );
+                },
+                child: const Text(
+                  "Book Now",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 */

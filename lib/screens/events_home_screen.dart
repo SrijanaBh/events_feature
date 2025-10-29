@@ -1,6 +1,468 @@
 import 'dart:convert';
-//import 'package:events_feature/controllers/typing_logic.dart';
 import 'package:events_feature/controllers/looping_appbar_title.dart';
+import 'package:events_feature/core/theme/colors.dart';
+import 'package:events_feature/screens/events_details_screen.dart';
+import 'package:events_feature/utils/date_time_format.dart';
+import 'package:events_feature/utils/session_manager.dart'; // ✅ Import SessionManager
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+class EventsHomeScreen extends StatefulWidget {
+  const EventsHomeScreen({super.key});
+
+  @override
+  State<EventsHomeScreen> createState() => _EventsHomeScreenState();
+}
+
+class _EventsHomeScreenState extends State<EventsHomeScreen> {
+  String? authToken;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadToken();
+  }
+
+  /// 🔹 Load token dynamically from SessionManager
+  Future<void> _loadToken() async {
+    final session = SessionManager();
+    await session.loadSession();
+
+    setState(() {
+      authToken = session.authToken;
+    });
+
+    debugPrint("✅ Loaded Token for Events Page: $authToken");
+  }
+
+  /// 🔹 Fetch Events using the stored dynamic token
+  Future<List<dynamic>> fetchEventsData() async {
+    try {
+      if (authToken == null || authToken!.isEmpty) {
+        throw Exception("User not logged in or token missing");
+      }
+
+      final url = 'api/events/list';
+      final response = await http.get(
+        Uri.parse('https://white-labels-app-server.vercel.app/api/events/list'),
+        headers: {
+          "x-auth-token": authToken!, // ✅ Use dynamic token
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return responseData["data"];
+      } else {
+        throw Exception("Failed to load events (${response.statusCode})");
+      }
+    } catch (e, s) {
+      debugPrint("❌ Error fetching events: $e");
+      debugPrintStack(stackTrace: s);
+      rethrow;
+    }
+  }
+
+  String formatDate(String dateStr) {
+    try {
+      final date = DateTime.parse(dateStr);
+      return "${date.day}/${date.month}/${date.year}";
+    } catch (_) {
+      return "";
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        //centerTitle: false,
+        //leading: const Padding(padding: EdgeInsets.all(8.0)),
+        title: const LoopingTypingAppBarTitle(
+          messages: [
+            "Happening Events !",
+            "Explore More !",
+            "Don't Miss Out !"
+          ],
+          typingSpeed: Duration(microseconds: 25),
+        ),
+      ),
+      body: authToken == null
+          ? const Center(
+              child: Text(
+                "Please log in to view events",
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            )
+          : FutureBuilder<List<dynamic>>(
+              future: fetchEventsData(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      "Error: ${snapshot.error}",
+                      style: const TextStyle(color: Colors.redAccent),
+                    ),
+                  );
+                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      "No events available",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  );
+                }
+
+                final events = snapshot.data!;
+
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  itemCount: events.length,
+                  itemBuilder: (context, index) {
+                    final event = events[index];
+                    String fromDate = formatDate(event["from_date"] ?? "");
+                    String toDate = formatDate(event["to_date"] ?? "");
+                    final fromDateC = formatDateTime(fromDate);
+                    final toDateC = formatDateTime(toDate);
+
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                EventDetailsScreen(eventId: event["id"]),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 20),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[900],
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.green.withOpacity(0.4),
+                              blurRadius: 6,
+                              spreadRadius: 1,
+                              offset: const Offset(2, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // --- Event Image (Top) ---
+                            ClipRRect(
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(16),
+                              ),
+                              child: Image.network(
+                                event["img_path"] ?? '',
+                                height: 450,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Container(
+                                  height: 500,
+                                  width: double.infinity,
+                                  color: Colors.grey[900],
+                                  child: const Icon(
+                                    Icons.broken_image,
+                                    color: Colors.white,
+                                    size: 40,
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            // --- Details Below Image ---
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Event Title
+                                  Text(
+                                    event["title"] ?? "No Title",
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+
+                                  // Event Slug
+                                  if ((event["slug"] ?? "").isNotEmpty)
+                                    Text(
+                                      event["slug"],
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  const SizedBox(height: 10),
+
+                                  // Dates Row
+                                  if (fromDate.isNotEmpty && toDate.isNotEmpty)
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.calendar_today,
+                                          color: Colors.green,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          "$fromDateC → $toDateC",
+                                          style: const TextStyle(
+                                            color: Colors.green,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+    );
+  }
+}
+
+
+
+
+
+/*
+import 'dart:convert';
+import 'package:events_feature/controllers/looping_appbar_title.dart';
+import 'package:events_feature/core/theme/colors.dart';
+import 'package:events_feature/screens/events_details_screen.dart';
+import 'package:events_feature/utils/date_time_format.dart';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+class EventsHomeScreen extends StatelessWidget {
+  const EventsHomeScreen({super.key});
+
+  Future<List<dynamic>> fetchEventsData() async {
+    try {
+      final url = 'https://white-labels-app-server.vercel.app/api/events/list';
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          "x-auth-token":
+              "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMTAwNywidXNlcl9lbWFpbCI6InJpcHdpbmtsZTVAZ21haWwuY29tIiwidXNlcl9tb2JpbGUiOiI5MTkxNzcyNzIxMzMiLCJ1c2VyX2NsdWJfaWQiOjIyMiwiaWF0IjoxNzYwMzMzMzEzLCJleHAiOjE3NjA5MzgxMTN9.a_bN5P_xKkNYtitRRfnRhBiz5o94CkQfX7OFyYiB9pE",
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return responseData["data"];
+      } else {
+        throw Exception("Failed to load events");
+      }
+    } catch (e, s) {
+      print(e);
+      print(s);
+      rethrow;
+    }
+  }
+
+  String formatDate(String dateStr) {
+    try {
+      final date = DateTime.parse(dateStr);
+      return "${date.day}/${date.month}/${date.year}";
+    } catch (_) {
+      return "";
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        centerTitle: false,
+        leading: const Padding(padding: EdgeInsets.all(8.0)),
+        title: const LoopingTypingAppBarTitle(
+          messages: [
+            "Happening Events !",
+            "Explore More !",
+            "Don't Miss Out !",
+          ],
+          typingSpeed: Duration(microseconds: 25),
+        ),
+      ),
+      body: FutureBuilder<List<dynamic>>(
+        future: fetchEventsData(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                "Error: ${snapshot.error}",
+                style: const TextStyle(color: Colors.green),
+              ),
+            );
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(
+              child: Text(
+                "No events available",
+                style: TextStyle(color: Colors.white),
+              ),
+            );
+          }
+
+          final events = snapshot.data!;
+
+          return ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            itemCount: events.length,
+            itemBuilder: (context, index) {
+              final event = events[index];
+              String fromDate = formatDate(event["from_date"] ?? "");
+              String toDate = formatDate(event["to_date"] ?? "");
+              final fromDateC = formatDateTime(fromDate);
+              final toDateC = formatDateTime(toDate);
+
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => EventDetailsScreen(eventId: event["id"]),
+                    ),
+                  );
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[900],
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.green.withOpacity(0.4),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                        offset: const Offset(2, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // --- Event Image (Top) ---
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(16),
+                        ),
+                        child: Image.network(
+                          event["img_path"] ?? '',
+                          height: 500,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                height: 200,
+                                color: Colors.grey[700],
+                                child: const Icon(
+                                  Icons.broken_image,
+                                  color: Colors.white,
+                                  size: 40,
+                                ),
+                              ),
+                        ),
+                      ),
+
+                      // --- Details Below Image ---
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Event Title
+                            Text(
+                              event["title"] ?? "No Title",
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+
+                            // Event Slug
+                            if ((event["slug"] ?? "").isNotEmpty)
+                              Text(
+                                event["slug"],
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            const SizedBox(height: 10),
+
+                            // Dates Row
+                            if (fromDate.isNotEmpty && toDate.isNotEmpty)
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.calendar_today,
+                                    color: Colors.green,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    "$fromDateC → $toDateC",
+                                    style: const TextStyle(
+                                      color: Colors.green,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+*/
+
+/*
+import 'dart:convert';
+import 'package:events_feature/controllers/looping_appbar_title.dart';
+import 'package:events_feature/core/theme/colors.dart';
 import 'package:events_feature/screens/events_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -10,19 +472,18 @@ class EventsHomeScreen extends StatelessWidget {
 
   Future<List<dynamic>> fetchEventsData() async {
     try {
-      final url =
-          'https://white-labels-app-server.vercel.app/api/events/list?club_id=222';
+      final url = 'https://white-labels-app-server.vercel.app/api/events/list';
       final response = await http.get(
         Uri.parse(url),
         headers: {
           "x-auth-token":
-              "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMDk2MywidXNlcl9lbWFpbCI6InJhbXlhQGNsdWJyLmluIiwidXNlcl9tb2JpbGUiOiI5MTk1NTMxMzAyNjEiLCJ1c2VyX2NsdWJfaWQiOjIyMiwiaWF0IjoxNzU3MTQwMjM4LCJleHAiOjE3NTc3NDUwMzh9.Jy45T-nOpV8jUhGLL_MPz3Zxw-vjb-kpFx89SmzWjTM",
+              "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMTAwNywidXNlcl9lbWFpbCI6InJpcHdpbmtsZTVAZ21haWwuY29tIiwidXNlcl9tb2JpbGUiOiI5MTkxNzcyNzIxMzMiLCJ1c2VyX2NsdWJfaWQiOjIyMiwiaWF0IjoxNzU5NDg3MzEzLCJleHAiOjE3NjAwOTIxMTN9.mdkoAHAk1fXGC0hYlRUBNfTbLflKWNbu1oUEbp5rNZs",
         },
       );
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        return responseData["data"]; // This is the list of events
+        return responseData["data"];
       } else {
         throw Exception("Failed to load events");
       }
@@ -30,34 +491,25 @@ class EventsHomeScreen extends StatelessWidget {
       print(e);
       print(s);
       rethrow;
-      // TODO
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.grey[900],
-        leading: Padding(padding: const EdgeInsets.all(8.0)),
+        backgroundColor: Colors.black,
+        centerTitle: false,
+        leading: const Padding(padding: EdgeInsets.all(8.0)),
         title: const LoopingTypingAppBarTitle(
           messages: [
             "Happening Events !",
             "Explore More !",
             "Don't Miss Out !",
           ],
-          typingSpeed: Duration(microseconds: 5),
+          typingSpeed: Duration(microseconds: 25),
         ),
-        //const TypingAppBarTitle(fullText: "Happening Events!"),
-        //const Text(
-        //"Happening Events!",
-        /*style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),*/
       ),
       body: FutureBuilder<List<dynamic>>(
         future: fetchEventsData(),
@@ -82,20 +534,33 @@ class EventsHomeScreen extends StatelessWidget {
 
           final events = snapshot.data!;
           return SizedBox(
-            height: MediaQuery.of(context).size.height * 0.8,
+            height: MediaQuery.of(context).size.height * 0.85,
             child: PageView.builder(
               itemCount: events.length,
-              controller: PageController(
-                viewportFraction: 0.95,
-              ), // Adjust for slight margin
+              controller: PageController(viewportFraction: 0.95),
               itemBuilder: (context, index) {
                 final event = events[index];
+
+                // 🗓️ Format dates (safe parse)
+                String formatDate(String dateStr) {
+                  try {
+                    final date = DateTime.parse(dateStr);
+                    return "${date.day}/${date.month}/${date.year}";
+                  } catch (_) {
+                    return "";
+                  }
+                }
+
+                final fromDate = formatDate(event["from_date"] ?? "");
+                final toDate = formatDate(event["to_date"] ?? "");
+
                 return GestureDetector(
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => EventDetailsScreen(event: event),
+                        builder: (_) =>
+                            EventDetailsScreen(eventId: event["id"]),
                       ),
                     );
                   },
@@ -109,10 +574,227 @@ class EventsHomeScreen extends StatelessWidget {
                           blurRadius: 10,
                           spreadRadius: 3,
                           offset: const Offset(5, 6),
-                          //color: Colors.grey.shade300,
-                          //blurRadius: 10,
-                          //spreadRadius: 2,
-                          //offset: const Offset(4, 4),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Stack(
+                        children: [
+                          // --- Event Image ---
+                          Image.network(
+                            event["img_path"] ?? '',
+                            height: 620,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(
+                                  height: 400,
+                                  color: Colors.grey[700],
+                                  child: const Icon(
+                                    Icons.broken_image,
+                                    color: Colors.white,
+                                    size: 40,
+                                  ),
+                                ),
+                          ),
+
+                          // 🗓️ --- Date Badge (Top Left) ---
+                          if (fromDate.isNotEmpty && toDate.isNotEmpty)
+                            Positioned(
+                              top: 16,
+                              left: 16,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.6),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.calendar_today,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      "$fromDate → $toDate",
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                          // --- Title and Venue (Bottom) ---
+                          Positioned(
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.black.withOpacity(0.7),
+                                  ],
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    event["title"] ?? "No Title",
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    event["slug"] ?? "",
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+*/
+
+/*
+import 'dart:convert';
+//import 'package:events_feature/controllers/typing_logic.dart';
+import 'package:events_feature/controllers/looping_appbar_title.dart';
+import 'package:events_feature/core/theme/colors.dart';
+//import 'package:events_feature/screens/edit_profile_page.dart';
+import 'package:events_feature/screens/events_details_screen.dart';
+//import 'package:events_feature/screens/settings_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+class EventsHomeScreen extends StatelessWidget {
+  const EventsHomeScreen({super.key});
+
+  Future<List<dynamic>> fetchEventsData() async {
+    try {
+      final url = 'https://white-labels-app-server.vercel.app/api/events/list';
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          "x-auth-token":
+              "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMTAwNywidXNlcl9lbWFpbCI6InJpcHdpbmtsZTVAZ21haWwuY29tIiwidXNlcl9tb2JpbGUiOiI5MTkxNzcyNzIxMzMiLCJ1c2VyX2NsdWJfaWQiOjIyMiwiaWF0IjoxNzU5NDg3MzEzLCJleHAiOjE3NjAwOTIxMTN9.mdkoAHAk1fXGC0hYlRUBNfTbLflKWNbu1oUEbp5rNZs",
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return responseData["data"]; // This is the  event
+      } else {
+        throw Exception("Failed to load events");
+      }
+    } catch (e, s) {
+      print(e);
+      print(s);
+      rethrow;
+      // TODO
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.grey[900],
+        leading: Padding(padding: const EdgeInsets.all(8.0)),
+        title: const LoopingTypingAppBarTitle(
+          messages: [
+            "Happening Events !",
+            "Explore More !",
+            "Don't Miss Out !",
+          ],
+          typingSpeed: Duration(microseconds: 5),
+        ),
+      ),
+      body: FutureBuilder<List<dynamic>>(
+        future: fetchEventsData(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                "Error: ${snapshot.error}",
+                style: const TextStyle(color: Colors.green),
+              ),
+            );
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(
+              child: Text(
+                "No events available",
+                style: TextStyle(color: Colors.white),
+              ),
+            );
+          }
+
+          final events = snapshot.data!;
+          return SizedBox(
+            height: MediaQuery.of(context).size.height * 0.85,
+            child: PageView.builder(
+              itemCount: events.length,
+              controller: PageController(
+                viewportFraction: 0.95,
+              ), // Adjust for slight margin
+              itemBuilder: (context, index) {
+                final event = events[index];
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            EventDetailsScreen(eventId: event["id"]),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.green.withOpacity(0.5),
+                          blurRadius: 10,
+                          spreadRadius: 3,
+                          offset: const Offset(5, 6),
                         ),
                       ],
                     ),
@@ -188,460 +870,4 @@ class EventsHomeScreen extends StatelessWidget {
     );
   }
 }
-
-/*Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: events.map((event) {
-                  return GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => EventDetailsScreen(event: event),
-                        ),
-                      );
-                    },
-                    child: Container(
-                      width: MediaQuery.of(context).size.width * 0.9,
-                      height: MediaQuery.of(context).size.height * 0.8,
-                      margin: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.shade300,
-                            blurRadius: 10,
-                            spreadRadius: 2,
-                            offset: const Offset(4, 4),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Stack(
-                          children: [
-                            // Background Image
-                            Image.network(
-                              event["img_path"] ?? '',
-                              height: 590,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  Container(
-                                    height: 400,
-                                    width: double.infinity,
-                                    color: Colors.grey[700],
-                                    child: const Icon(
-                                      Icons.broken_image,
-                                      color: Colors.white,
-                                      size: 40,
-                                    ),
-                                  ),
-                            ),
-                            // Gradient Overlay
-                            Positioned(
-                              bottom: 0,
-                              left: 0,
-                              right: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: [
-                                      Colors.transparent,
-                                      Colors.black.withOpacity(0.7),
-                                    ],
-                                  ),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      event["title"] ?? "No Title",
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      event["slug"] ?? "",
-                                      style: const TextStyle(
-                                        color: Colors.white70,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}*/
-
-/*return ListView.builder(
-            itemCount: events.length,
-            itemBuilder: (context, index) {
-              final event = events[index];
-
-              return GestureDetector(
-                onTap: () {
-                  // ✅ This passes the correct event from API to EventDetailsScreen
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => EventDetailsScreen(event: event),
-                    ),
-                  );
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Event Image
-                      if (event["img_path"] != null)
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.network(
-                            event["img_path"],
-                            height: 200,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Container(
-                              height: 200,
-                              color: Colors.grey,
-                              child: const Icon(Icons.broken_image),
-                            ),
-                          ),
-                        ),
-                      const SizedBox(height: 8),
-
-                      // Event Title
-                      Text(
-                        event["title"] ?? "No Title",
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                      ),
-
-                      // Event Slug
-                      Text(
-                        event["slug"] ?? "",
-                        style: const TextStyle(color: Colors.grey),
-                      ),
-
-                      const Divider(color: Colors.grey),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
-}
-
-
-
-
-
-
-
-/*import 'dart:convert';
-import 'package:events_feature/screens/events_details_screen.dart';
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-
-class EventsHomeScreen extends StatelessWidget {
-  const EventsHomeScreen({super.key});
-
-  Future<List<dynamic>> fetchEventsData() async {
-    final url =
-        'https://white-labels-app-server.vercel.app/api/events/list?club_id=222';
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {
-        "x-auth-token":
-            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2ODE1NDUxNjN9.D4TE2NW6u8IiLAIDDdONehwppGeeVGy-ZUn6pVngR-s",
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final responseData = jsonDecode(response.body);
-      final events = responseData["data"];
-      print(events);
-
-      return events;
-    } else {
-      throw response.body;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 10, 7, 7),
-        title: Text(
-          "Happening Events!",
-          style: TextStyle(
-            fontSize: 30,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        actions: [
-          IconButton(
-            onPressed: () async {
-              await fetchEventsData();
-            },
-            icon: Icon(Icons.refresh),
-          ),
-        ],
-      ),
-      body: FutureBuilder(
-        future: fetchEventsData(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            ); // loading state
-          } else if (snapshot.hasError) {
-            return Center(child:Text("Error: ${snapshot.error}"));
-          } else if (snapshot.hasData ||snapshot.data!.isEmpty) {
-            final events = snapshot.data!;
-            return ListView.builder(
-              itemCount: events.length,
-              itemBuilder: (context, index) {
-                final event = events[index];
-                print(event["title"]!);
-                return Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12.0,
-                    vertical: 8.0,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => EventDetailsScreen(event: event),
-                            ),
-                          );
-                        },
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.network(
-                            event["img_path"] ?? '',
-                            width: MediaQuery.of(context).size.width,
-                            height: 200,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                Container(
-                                  height: 200,
-                                  width: double.infinity,
-                                  color: Colors.grey[300],
-                                  child: const Icon(
-                                    Icons.broken_image,
-                                    size: 40,
-                                  ),
-                                ),
-                          ),
-                        ),
-                      ),
-
-                      // Adaptive image
-                      /*ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.network(
-                          event["img_path"] ?? '',
-                          width: MediaQuery.of(context).size.width,
-
-                          height: 200,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(
-                                height: 200,
-                                width: double.infinity,
-                                color: Colors.grey[300],
-                                child: const Icon(Icons.broken_image, size: 40),
-                              ),
-                        ),
-                      ),*/
-                      const SizedBox(height: 8),
-                      // Title
-                      Text(
-                        event["title"] ?? 'No Title',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      // Slug or subtitle
-                      Text(
-                        event["slug"] ?? '',
-                        style: const TextStyle(color: Colors.grey),
-                      ),
-                      const Divider(height: 24),
-                    ],
-                  ),
-                );
-              },
-            );
-
-            /*return ListView.builder(
-              itemCount: events.length,
-              itemBuilder: (context, index) {
-                final event = events[index];
-                return ListTile(
-                  leading: Image.network(event["img_path"], width: 180),
-                  title: Text(event["title"]),
-                  subtitle: Text(event["slug"]),
-                );
-              },
-            );
-
-            ListTile(
-                  leading: Image.network(event["img_path"], width: 150),
-                  title: Text(event["title"]),
-                  subtitle: Text(event["slug"]),
-                );*/
-          } else {
-            return Text("No data");
-          }
-        },
-      ),
-    );
-  }
-}
-*/
-
-
-
-
-
-/*
-class EventsHomeScreen extends StatelessWidget {
-  const EventsHomeScreen({super.key});
-
-  final List<Map<String, String>> events = const [
-    {
-      'image': 'assets/al-elmes-ULHxWq8reao-unsplash.jpg',
-      'date': 'Aug 30, 2025',
-      'time': '7:00 PM',
-      'title': 'Live Music Festival',
-    },
-    {
-      'image': 'assets/pablo-heimplatz-ZODcBkEohk8-unsplash.jpg',
-      'date': 'Sep 5, 2025',
-      'time': '6:00 PM',
-      'title': 'Food & Wine Expo',
-    },
-    {
-      'image': 'assets/priscilla-du-preez-W3SEyZODn8U-unsplash.jpg',
-      'date': 'Sep 12, 2025',
-      'time': '5:30 PM',
-      'title': 'Tech Conference 2025',
-    },
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Happening Events!',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: const Color.fromARGB(255, 240, 5, 5),
-      ),
-      body: ListView.builder(
-        itemCount: events.length,
-        itemBuilder: (context, index) {
-          final event = events[index];
-
-          return GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => EventDetailsScreen(event: event),
-                ),
-              );
-            },
-            child: Card(
-              margin: const EdgeInsets.all(12),
-              child: Stack(
-                children: [
-                  Image.asset(
-                    event['image']!,
-                    fit: BoxFit.cover,
-                    height: 200,
-                    width: double.infinity,
-                  ),
-                  Container(
-                    height: 200,
-                    padding: const EdgeInsets.all(16),
-                    alignment: Alignment.bottomLeft,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withOpacity(0.7),
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          event['title']!,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${event['date']} | ${event['time']}',
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-*/
 */

@@ -1,8 +1,9 @@
-import 'package:events_feature/screens/events_summary_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:events_feature/models/event_models.dart';
+import 'events_summary_screen.dart';
 
 class TicketSelectionScreen extends StatefulWidget {
-  final Map<String, dynamic> event;
+  final EventModel event;
 
   const TicketSelectionScreen({super.key, required this.event});
 
@@ -11,145 +12,198 @@ class TicketSelectionScreen extends StatefulWidget {
 }
 
 class _TicketSelectionScreenState extends State<TicketSelectionScreen> {
-  int _ticketCount = 1;
+  final Map<int, int> _selectedQuantities = {}; // ticketId -> qty
 
   @override
   Widget build(BuildContext context) {
-    final double pricePerTicket =
-        double.tryParse(widget.event["price"].toString()) ?? 0;
-    final double totalPrice = _ticketCount * pricePerTicket;
+    final event = widget.event;
+
+    // Check if any tickets have been selected
+    final hasSelection = _selectedQuantities.values.any((qty) => qty > 0);
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.grey[900],
       appBar: AppBar(
+        title: const Text("Select Tickets"),
         backgroundColor: Colors.grey[900],
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: Text(
-          "Book Tickets",
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
+        foregroundColor: Colors.white,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Event title
-            Text(
-              widget.event["title"] ?? "Event",
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 10),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              itemCount: event.ticketDetails.length,
+              itemBuilder: (context, index) {
+                final ticket = event.ticketDetails[index];
+                final qty = _selectedQuantities[ticket.id] ?? 0;
 
-            // Ticket selector
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  "Number of Tickets",
-                  style: TextStyle(color: Colors.white70, fontSize: 16),
-                ),
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: () {
-                        if (_ticketCount > 1) {
-                          setState(() => _ticketCount--);
-                        }
-                      },
-                      icon: const Icon(
-                        Icons.remove_circle,
-                        color: Colors.white,
-                      ),
-                    ),
-                    Text(
-                      '$_ticketCount',
-                      style: const TextStyle(fontSize: 18, color: Colors.white),
-                    ),
-                    IconButton(
-                      onPressed: () {
-                        setState(() => _ticketCount++);
-                      },
-                      icon: const Icon(Icons.add_circle, color: Colors.green),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 30),
-
-            // Price summary
-            Text(
-              "Price per Ticket: ₹$pricePerTicket",
-              style: const TextStyle(color: Colors.white54),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              "Total: ₹$totalPrice",
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.greenAccent,
-              ),
-            ),
-
-            const Spacer(),
-
-            // Proceed Button
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                return ListTile(
+                  leading: Image.network(
+                    ticket.imgPath,
+                    width: 40,
+                    height: 40,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const Icon(Icons.confirmation_num, size: 40),
                   ),
-                ),
-                onPressed: () {
-                  // Placeholder: Add payment logic here
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => EventsSummaryScreen(
-                        event: widget.event,
-                        ticketCount: _ticketCount,
-                        totalPrice: totalPrice,
-                      ),
-                    ),
-                  );
-                  /*showDialog(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      backgroundColor: Colors.grey[900],
-                      title: const Text("Booking Confirmed", style: TextStyle(color: Colors.white)),
-                      content: Text(
-                        "You've booked $_ticketCount ticket(s) for ₹$totalPrice.",
-                        style: const TextStyle(color: Colors.white70),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text("OK", style: TextStyle(color: Colors.redAccent)),
+                  title: Text(
+                    ticket.title,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  subtitle: Text(
+                    "₹${ticket.price} • Available: ${ticket.availableQty}",
+                    style: const TextStyle(color: Colors.greenAccent),
+                  ),
+                  trailing: (_selectedQuantities[ticket.id] ?? 0) == 0
+                      ? GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedQuantities[ticket.id] = 1;
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 46,
+                              vertical: 14,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.green,
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            child: const Text(
+                              "Add",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        )
+                      : AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 1,
+                            vertical: 1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Minus button
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.remove,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                                onPressed: (_selectedQuantities[ticket.id] ??
+                                            0) >
+                                        1
+                                    ? () {
+                                        setState(() {
+                                          _selectedQuantities[ticket.id] =
+                                              (_selectedQuantities[ticket.id] ??
+                                                      0) -
+                                                  1;
+                                        });
+                                      }
+                                    : () {
+                                        setState(() {
+                                          _selectedQuantities[ticket.id] = 0;
+                                        });
+                                      },
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 32,
+                                  minHeight: 32,
+                                ),
+                              ),
+
+                              // Quantity text
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                                child: Text(
+                                  (_selectedQuantities[ticket.id] ?? 0)
+                                      .toString(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+
+                              // Plus button
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.add,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                                onPressed: (_selectedQuantities[ticket.id] ??
+                                            0) <
+                                        ticket.availableQty
+                                    ? () {
+                                        setState(() {
+                                          _selectedQuantities[ticket.id] =
+                                              (_selectedQuantities[ticket.id] ??
+                                                      0) +
+                                                  1;
+                                        });
+                                      }
+                                    : null,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 32,
+                                  minHeight: 32,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
-                  );*/
-                },
-                child: const Text(
-                  "Proceed to Payment",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                );
+              },
+            ),
+          ),
+
+          // Proceed Button
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 50),
+              ),
+              onPressed: hasSelection
+                  ? () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => EventsSummaryScreen(
+                            event: event,
+                            selectedTickets: _selectedQuantities,
+                          ),
+                        ),
+                      );
+                    }
+                  : () {},
+              child: const Text(
+                "Proceed to Pay",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
