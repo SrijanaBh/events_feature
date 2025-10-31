@@ -199,9 +199,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildProfileHeader(),
-            const SizedBox(height: 20),
+            //    const SizedBox(height: 20),
             _buildTabs(),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
             Expanded(child: _buildOrdersList()),
           ],
         ),
@@ -274,7 +274,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         foregroundColor: selected == label ? Colors.black : Colors.white,
         side: const BorderSide(color: Colors.white54),
         padding: const EdgeInsets.symmetric(vertical: 14),
-        
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
       ),
       onPressed: () => _changeTab(label),
       child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),

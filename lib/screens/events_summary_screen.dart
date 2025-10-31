@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:events_feature/screens/checkout_screen.dart';
 import 'package:events_feature/screens/payuweb_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
@@ -328,39 +329,46 @@ class _EventsSummaryScreenState extends State<EventsSummaryScreen> {
                     ],
                   ),
                 ),
-      bottomNavigationBar: !isLoading
-          ? Container(
-              padding: const EdgeInsets.all(16),
-              color: Colors.black,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                onPressed: () {
-                  _initiatePayment();
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        "Proceeding to payment for ₹${finalTotal.toStringAsFixed(2)}",
-                      ),
-                    ),
-                  );
-                  // TODO: Integrate PayU next
-                },
-                child: const Text(
-                  "Proceed to Pay",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-              ),
-            )
-          : null,
+      bottomNavigationBar: CheckOutButton(
+        
+        event: widget.event,
+        selectedTickets: widget.selectedTickets,
+        amount: finalTotal.toInt(),
+      ),
     );
+    //   bottomNavigationBar: !isLoading
+    //       ? Container(
+    //           padding: const EdgeInsets.all(16),
+    //           color: Colors.black,
+    //           child: ElevatedButton(
+    //             style: ElevatedButton.styleFrom(
+    //               backgroundColor: Colors.green,
+    //               foregroundColor: Colors.white,
+    //               padding: const EdgeInsets.symmetric(vertical: 14),
+    //               shape: RoundedRectangleBorder(
+    //                 borderRadius: BorderRadius.circular(10),
+    //               ),
+    //             ),
+    //             onPressed: () {
+    //               // _initiatePayment();
+
+    //               ScaffoldMessenger.of(context).showSnackBar(
+    //                 SnackBar(
+    //                   content: Text(
+    //                     "Proceeding to payment for ₹${finalTotal.toStringAsFixed(2)}",
+    //                   ),
+    //                 ),
+    //               );
+    //               // TODO: Integrate PayU next
+    //             },
+    //             child: const Text(
+    //               "Proceed to Pay",
+    //               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+    //             ),
+    //           ),
+    //         )
+    //       : null,
+    // );
   }
 }
 

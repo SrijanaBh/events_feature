@@ -1,4 +1,5 @@
 import 'package:events_feature/utils/session_manager.dart';
+import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'dart:convert';
@@ -85,6 +86,47 @@ class _FeedbackPageState extends State<FeedbackPage> {
     }
   }
 
+/*
+  Widget _buildStar(int index) {
+    bool isSelected = index < _rating;
+
+    return GestureDetector(
+      onTap: () => setState(() => _rating = index + 1),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            if (isSelected)
+              BoxShadow(
+                // color: Colors.amber.withOpacity(0.7),
+                blurRadius: 15,
+                spreadRadius: 1,
+                offset: const Offset(0, 4),
+              ),
+          ],
+        ),
+        child: ShaderMask(
+          shaderCallback: (Rect bounds) {
+            return LinearGradient(
+              colors: isSelected
+                  ? [Colors.amberAccent, Colors.orangeAccent, Colors.yellow]
+                  : [Colors.grey.shade400, Colors.grey.shade600],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ).createShader(bounds);
+          },
+          blendMode: BlendMode.srcIn,
+          child: const Icon(
+            Icons.star_rounded,
+            size: 50,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+*/
   Widget _buildStar(int index) {
     return IconButton(
       highlightColor: Colors.amber.shade400,
@@ -184,15 +226,21 @@ class _FeedbackPageState extends State<FeedbackPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 34,
+                  horizontal: 116,
                   vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
               child: _isSubmitting
                   ? const CircularProgressIndicator(color: Colors.white)
                   : const Text(
-                      "Submit Feedback",
-                      style: TextStyle(color: Colors.white, fontSize: 16),
+                      "Submit feedback",
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold),
                     ),
             ),
             const SizedBox(height: 30),
@@ -208,6 +256,9 @@ class _FeedbackPageState extends State<FeedbackPage> {
                 style: TextStyle(
                   color: Colors.green,
                   decoration: TextDecoration.underline,
+                  decorationThickness: 2,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),

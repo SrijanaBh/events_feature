@@ -48,6 +48,7 @@ dependencies:
   encrypt: ^5.0.3
   marquee: ^2.2.3
   shimmer: ^3.0.0
+  payu_checkoutpro_flutter: ^1.3.4
   
   
 
