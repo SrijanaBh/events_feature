@@ -11,6 +11,8 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
+final _formKey = GlobalKey<FormState>();
+
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -61,7 +63,9 @@ class _LoginScreenState extends State<LoginScreen> {
           SnackBar(content: Text("Login failed: ${response.statusCode}")),
         );
       }
-    } catch (e) {
+    } catch (e,s) {
+      print(e);
+      print(s);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error: $e")),
       );
@@ -179,7 +183,67 @@ class _LoginScreenState extends State<LoginScreen> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: SingleChildScrollView(
-        child: Column(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Login",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              _buildPhoneField(),
+              const SizedBox(height: 10),
+              _buildTextField("Name", _nameController, Icons.person),
+              const SizedBox(height: 10),
+              _buildEmailField(), // 👈 use dedicated email field
+              const SizedBox(height: 20),
+              _isLoading
+                  ? const CircularProgressIndicator(color: Colors.green)
+                  : SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (_formKey.currentState!.validate()) {
+                            _loginUser(); // 👈 only login if form is valid
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text(
+                          "Log In",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+            ],
+          ),
+        ),
+
+        /*child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Row(
@@ -236,6 +300,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
           ],
         ),
+      ),*/
       ),
     );
   }
@@ -266,6 +331,56 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildPhoneField() {
+    return TextFormField(
+      controller: _phoneController,
+      keyboardType: TextInputType.phone,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: "Phone",
+        labelStyle: const TextStyle(color: Colors.white70),
+        hintText: "Enter your mobile number",
+        hintStyle: const TextStyle(color: Colors.white38),
+        prefixIcon: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("🇮🇳", style: TextStyle(fontSize: 20)),
+              SizedBox(width: 6),
+              Text(
+                "+91",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+        prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+        enabledBorder: const OutlineInputBorder(
+          borderSide: BorderSide(color: Colors.white24),
+        ),
+        focusedBorder: const OutlineInputBorder(
+          borderSide: BorderSide(color: Colors.greenAccent),
+        ),
+      ),
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) {
+          return "Please enter your phone number";
+        }
+        if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+          return "Phone number must contain digits only";
+        }
+        if (value.length != 10) {
+          return "Phone number must be exactly 10 digits";
+        }
+        return null;
+      },
+    );
+  }
+
+  /* Widget _buildPhoneField() {
     return TextField(
       controller: _phoneController,
       keyboardType: TextInputType.phone,
@@ -301,7 +416,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     );
-  }
+  }*/
 
   // ---------------- OTP BOTTOM SHEET ----------------
   void _showOTPBottomSheet(String mobile) {
@@ -440,10 +555,35 @@ class _LoginScreenState extends State<LoginScreen> {
       },
     );
   }
+
+  Widget _buildEmailField() {
+    return TextFormField(
+      controller: _emailController,
+      style: const TextStyle(color: Colors.white),
+      keyboardType: TextInputType.emailAddress,
+      decoration: const InputDecoration(
+        labelText: "Email",
+        prefixIcon: Icon(Icons.email, color: Colors.white70),
+        labelStyle: TextStyle(color: Colors.white70),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Colors.white24),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Colors.greenAccent),
+        ),
+      ),
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) {
+          return "Please enter your email";
+        }
+        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+          return "Enter a valid email";
+        }
+        return null;
+      },
+    );
+  }
 }
-
-
-
 
 /*
 import 'dart:convert';

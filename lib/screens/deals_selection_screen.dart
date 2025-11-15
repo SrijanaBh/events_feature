@@ -1,4 +1,4 @@
-import 'package:events_feature/screens/upi_payment_screen.dart';
+import 'package:events_feature/screens/checkout_screen_deals.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:events_feature/models/deal_models.dart';
@@ -78,36 +78,17 @@ class DealSelectionScreen extends StatelessWidget {
               ),
             ),
             const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                onPressed: () {
-                  /*Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const PayUPaymentScreen()),
-                  );*/
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        "Deal confirmed for ${DateFormat('MMM d, yyyy').format(selectedDate)}!",
-                      ),
-                    ),
-                  );
-                },
-                child: const Text(
-                  "Confirm Booking",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
+            Center(
+              child: SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: DealsCheckOutButton(
+                    deal: deal,
+                    selectedDate: selectedDate,
+                    ticketCount: ticketCount,
+                    amount: totalPrice.toInt()),
               ),
-            ),
+            )
           ],
         ),
       ),

@@ -1,5 +1,7 @@
+import 'package:events_feature/screens/customer_support_screen.dart';
 import 'package:events_feature/screens/home_screen.dart';
 import 'package:events_feature/screens/login_page.dart';
+import 'package:events_feature/screens/tablebokking_screen.dart';
 import 'package:events_feature/utils/session_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:events_feature/utils/auth_manager.dart';
@@ -30,6 +32,8 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(useMaterial3: true),
       home: MainHomeScreen(),
+      //home: const TableReservationPage(),
+      //home: CustomerSupportPage(),
     );
   }
 }

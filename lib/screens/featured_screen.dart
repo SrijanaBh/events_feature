@@ -142,6 +142,25 @@ class _FeaturedEventsState extends State<FeaturedEvents> {
                   },
                 ),
               ),*/
+              /* CarouselSlider.builder(
+                itemCount: featuredList.length,
+                itemBuilder: (context, index, realIdx) {
+                  final item = featuredList[index];
+                  return _buildImageCard(context, item);
+                },
+                options: CarouselOptions(
+                  height: MediaQuery.of(context).size.height *
+                      0.48, // adaptive height
+                  enlargeCenterPage: true,
+                  enlargeFactor: 0.25,
+                  viewportFraction: 0.85,
+                  autoPlay: false,
+                  enableInfiniteScroll: true,
+                  onPageChanged: (index, reason) {
+                    setState(() => _currentIndex = index);
+                  },
+                ),
+              ),*/
               CarouselSlider.builder(
                 itemCount: featuredList.length,
                 itemBuilder: (context, index, realIdx) {
@@ -151,7 +170,7 @@ class _FeaturedEventsState extends State<FeaturedEvents> {
                 options: CarouselOptions(
                   height: MediaQuery.of(context).size.height * 0.65,
                   enlargeCenterPage: true,
-                  enlargeFactor: 0.25, // scales center card 25% larger
+                  enlargeFactor: 0.35, // scales center card 25% larger
                   viewportFraction:
                       0.85, // enough space on sides for swipe gestures
                   autoPlay: false, // manual sliding
@@ -387,6 +406,215 @@ class _FeaturedEventsState extends State<FeaturedEvents> {
       ),
     );
   }
+
+  /*Widget _buildImageCard(BuildContext context, Map<String, dynamic> item) {
+    final type = item["type"];
+
+    // --- Responsive scaling helpers ---
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    String formatDate(String? dateStr) {
+      if (dateStr == null || dateStr.isEmpty || dateStr == "0000-00-00")
+        return "";
+      try {
+        final date = DateTime.parse(dateStr);
+        return "${date.day}/${date.month}/${date.year}";
+      } catch (_) {
+        return "";
+      }
+    }
+
+    String fromDate = "";
+    String toDate = "";
+    if (type == "event") {
+      fromDate = formatDate(item["from_date"]);
+      toDate = formatDate(item["to_date"]);
+    } else if (type == "deal") {
+      fromDate = formatDate(item["offer_start_date"]);
+      toDate = formatDate(item["offer_end_date"]);
+    }
+
+    return GestureDetector(
+      onTap: () {
+        if (type == "event") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => EventDetailsScreen(eventId: item['id']),
+            ),
+          );
+        } else if (type == "deal") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => DealsDetailsScreen(dealId: item['id']),
+            ),
+          );
+        }
+      },
+      child: Container(
+        margin: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.025,
+          vertical: screenHeight * 0.012,
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.greenAccent.withOpacity(0.4),
+              blurRadius: 10,
+              spreadRadius: 2,
+              offset: const Offset(3, 3),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: AspectRatio(
+            aspectRatio: 16 / 9, // Ensures consistent image proportions
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // --- Background Image ---
+                Image.network(
+                  item["img_path"] ?? '',
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: Colors.grey[900],
+                    child: const Center(
+                      child: Icon(Icons.broken_image,
+                          color: Colors.white54, size: 48),
+                    ),
+                  ),
+                ),
+
+                // --- Gradient Overlay ---
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.04,
+                      vertical: screenHeight * 0.015,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.75),
+                        ],
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          item["title"] ?? "No Title",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: screenWidth * 0.05,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: screenHeight * 0.004),
+                        Text(
+                          item["slug"] ?? "",
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: screenWidth * 0.035,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // --- Date Badge ---
+                if (fromDate.isNotEmpty && toDate.isNotEmpty)
+                  Positioned(
+                    bottom: screenHeight * 0.10,
+                    left: screenWidth * 0.04,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: screenWidth * 0.03,
+                        vertical: screenHeight * 0.006,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.calendar_today,
+                              color: Colors.white, size: 14),
+                          SizedBox(width: screenWidth * 0.015),
+                          Text(
+                            "$fromDate → $toDate",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: screenWidth * 0.035,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                // --- Discount Badge ---
+                if (item["discount"] != null && item["discount"] != 0)
+                  Positioned(
+                    top: screenHeight * 0.015,
+                    right: screenWidth * 0.04,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: screenWidth * 0.03,
+                        vertical: screenHeight * 0.006,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.95),
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.green.withOpacity(0.5),
+                            blurRadius: 8,
+                            spreadRadius: 1,
+                            offset: const Offset(2, 3),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        item["discount_type"] == "r"
+                            ? "${item["discount"]}% OFF"
+                            : "₹${item["discount"]} OFF",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: screenWidth * 0.035,
+                          fontWeight: FontWeight.bold,
+                          shadows: const [
+                            Shadow(
+                              color: Colors.black45,
+                              blurRadius: 4,
+                              offset: Offset(1, 1),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }*/
 }
 
 /*

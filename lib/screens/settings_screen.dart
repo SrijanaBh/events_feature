@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:events_feature/models/selected_orders.dart';
+import 'package:events_feature/screens/customer_support_screen.dart';
 import 'package:events_feature/screens/edit_profile_page.dart';
 import 'package:events_feature/screens/login_page.dart';
 import 'package:events_feature/screens/logout_page.dart';
@@ -159,6 +160,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                     builder: (context) => const LogoutPage(),
+                  ).whenComplete(() => _loadUserData());
+                },
+              ),
+            if (_isLoggedIn || !_isLoggedIn)
+              ListTile(
+                leading: const Icon(Icons.support_agent, color: Colors.white70),
+                title: const Text(
+                  "Customer Support",
+                  style: TextStyle(color: Colors.white),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.grey[850],
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(20),
+                      ),
+                    ),
+                    builder: (context) => const CustomerSupportPage(),
                   ).whenComplete(() => _loadUserData());
                 },
               ),

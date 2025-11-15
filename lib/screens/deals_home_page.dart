@@ -1,3 +1,267 @@
+
+/*
+import 'dart:convert';
+import 'package:events_feature/controllers/looping_appbar_title.dart';
+import 'package:events_feature/models/deal_models.dart';
+import 'package:events_feature/screens/deals_details_screen.dart';
+import 'package:events_feature/utils/date_time_format.dart';
+import 'package:events_feature/utils/session_manager.dart';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+class DealsPage extends StatefulWidget {
+  const DealsPage({super.key});
+
+  @override
+  State<DealsPage> createState() => _DealsPageState();
+}
+
+class _DealsPageState extends State<DealsPage> {
+  late Future<List<DealModel>> _dealsFuture;
+  final SessionManager _sessionManager = SessionManager();
+
+  @override
+  void initState() {
+    super.initState();
+    _dealsFuture = fetchDealsData();
+  }
+
+  Future<List<DealModel>> fetchDealsData() async {
+    await _sessionManager.loadSession();
+    final token = _sessionManager.authToken;
+
+    if (token == null || token.isEmpty) {
+      throw Exception("User not authenticated. Please log in again.");
+    }
+
+    const url =
+        'https://white-labels-app-server.vercel.app/api/deals/list?club_id=222';
+
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {'x-auth-token': token},
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> body = jsonDecode(response.body);
+      final List<dynamic> data = body["data"] ?? [];
+      return data.map((e) => DealModel.fromJson(e)).toList();
+    } else {
+      throw Exception("Failed to load deals (${response.statusCode})");
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        title: const LoopingTypingAppBarTitle(
+          messages: [
+            "Grab Your Deals Now !",
+            "Explore Exclusive Offers !",
+            "Don't Miss Out !",
+          ],
+          typingSpeed: Duration(milliseconds: 80),
+        ),
+      ),
+      body: FutureBuilder<List<DealModel>>(
+        future: _dealsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(color: Colors.green),
+            );
+          } else if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                "Error: ${snapshot.error}",
+                style: const TextStyle(color: Colors.redAccent),
+              ),
+            );
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(
+              child: Text(
+                "No Deals Available",
+                style: TextStyle(color: Colors.white),
+              ),
+            );
+          }
+
+          final deals = snapshot.data!;
+
+          return ListView.builder(
+            padding: EdgeInsets.symmetric(
+              horizontal: screenWidth * 0.04,
+              vertical: screenHeight * 0.015,
+            ),
+            itemCount: deals.length,
+            itemBuilder: (context, index) {
+              final deal = deals[index];
+              final imageHeight =
+                  screenHeight * 0.3; // ✅ Responsive image height
+
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => DealsDetailsScreen(dealId: deal.id),
+                    ),
+                  );
+                },
+                child: Container(
+                  margin: EdgeInsets.only(bottom: screenHeight * 0.02),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[900],
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.green.withOpacity(0.4),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                        offset: const Offset(2, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // --- Responsive Deal Image ---
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(16),
+                        ),
+                        child: AspectRatio(
+                          aspectRatio: 16 / 9, // ✅ Keeps image proportional
+                          child: Stack(
+                            children: [
+                              Image.network(
+                                deal.imgPath,
+                                width: double.infinity,
+                                height: imageHeight,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Container(
+                                  height: imageHeight,
+                                  color: Colors.grey[800],
+                                  child: const Icon(
+                                    Icons.broken_image,
+                                    color: Colors.white,
+                                    size: 40,
+                                  ),
+                                ),
+                              ),
+
+                              // 🟢 Discount Badge
+                              if (deal.discount.isNotEmpty)
+                                Positioned(
+                                  top: screenHeight * 0.015,
+                                  right: screenWidth * 0.04,
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: screenWidth * 0.025,
+                                      vertical: screenHeight * 0.008,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green.withOpacity(0.9),
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.green.withOpacity(0.6),
+                                          blurRadius: 8,
+                                          spreadRadius: 2,
+                                          offset: const Offset(0, 3),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Text(
+                                      deal.discountType == 'percent'
+                                          ? '${deal.discount}% OFF'
+                                          : '₹${deal.discount} OFF',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: screenWidth * 0.035,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // --- Deal Details ---
+                      Padding(
+                        padding: EdgeInsets.all(screenWidth * 0.04),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Title
+                            Text(
+                              deal.title,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: screenWidth * 0.05,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(height: screenHeight * 0.008),
+
+                            // Slug
+                            if (deal.slug.isNotEmpty)
+                              Text(
+                                deal.slug,
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: screenWidth * 0.035,
+                                ),
+                              ),
+                            SizedBox(height: screenHeight * 0.012),
+
+                            // Dates Row
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.calendar_today,
+                                  color: Colors.green,
+                                  size: screenWidth * 0.045,
+                                ),
+                                SizedBox(width: screenWidth * 0.02),
+                                Flexible(
+                                  child: Text(
+                                    "${formatDateTime(deal.offerStartDate)} → ${formatDateTime(deal.offerEndDate)}",
+                                    style: TextStyle(
+                                      color: Colors.green,
+                                      fontSize: screenWidth * 0.037,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+*/
+
+
 import 'dart:convert';
 import 'package:events_feature/controllers/looping_appbar_title.dart';
 import 'package:events_feature/models/deal_models.dart';

@@ -246,18 +246,18 @@ class _FeedbackPageState extends State<FeedbackPage> {
             const SizedBox(height: 30),
             GestureDetector(
               onTap: () async {
-                final Uri url = Uri.parse("https://www.google.com");
+                final Uri url = Uri.parse("https://support@clubr.in");
                 if (await canLaunchUrl(url)) {
                   await launchUrl(url, mode: LaunchMode.externalApplication);
                 }
               },
               child: const Text(
-                "Review us on Google",
+                "Review us on our Website",
                 style: TextStyle(
                   color: Colors.green,
                   decoration: TextDecoration.underline,
-                  decorationThickness: 2,
-                  fontSize: 20,
+                  decorationThickness: 1,
+                  fontSize: 15,
                   fontWeight: FontWeight.bold,
                 ),
               ),
