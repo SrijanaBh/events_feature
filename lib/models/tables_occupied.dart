@@ -96,14 +96,14 @@ class SeatPoint {
   final double x;
   final double y;
   final String label;
-  final String tabIndex;
+  final dynamic tabIndex;
   final String minBilling;
   final String inclusions;
   final double width;
   final double height;
   final double cornerRadius;
   final double rotationAngle;
-  final int seats;
+  final dynamic seats;
   final int status;
   final int isBlocked;
   final int isBooked;

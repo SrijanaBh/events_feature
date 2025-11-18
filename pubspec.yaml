@@ -49,6 +49,7 @@ dependencies:
   marquee: ^2.2.3
   shimmer: ^3.0.0
   payu_checkoutpro_flutter: ^1.3.4
+  html: ^0.15.4
   
   
 
