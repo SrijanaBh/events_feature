@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:events_feature/models/event_models.dart';
 import 'package:events_feature/models/layout_model.dart';
 import 'package:events_feature/models/tables_occupied.dart';
+import 'package:events_feature/screens/table_summary_screen.dart';
 import 'package:events_feature/utils/date_time_format.dart';
 import 'package:events_feature/utils/utils.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import 'package:http/http.dart' as http;
 import 'package:events_feature/utils/session_manager.dart';
 import 'package:events_feature/models/seats_model.dart';
 import 'package:html/parser.dart' as html_parser;
+import 'package:events_feature/screens/table_summary_screen.dart';
 
 class TableReservationPage extends StatefulWidget {
   final EventModel event;
@@ -104,7 +106,7 @@ class _TableReservationPageState extends State<TableReservationPage> {
     setState(() => isLoading = true);
 
     final url = Uri.parse(
-      "https://white-labels-app-server.vercel.app/api/seatmaps/getEventMappedSeatmaps/?layout_id=$layoutId&event_id=${widget.event.id}}",
+      "https://white-labels-app-server.vercel.app/api/seatmaps/getEventMappedSeatmaps/?layout_id=$layoutId&event_id=${widget.event.id}",
     );
 
     try {
@@ -209,6 +211,13 @@ class _TableReservationPageState extends State<TableReservationPage> {
     final double scale = scaleX < scaleY ? scaleX : scaleY;
 
     const double spacing = 20;
+    double totalAmount = selectedTables.fold(
+      0.0,
+      (sum, label) {
+        final t = tables.firstWhere((x) => x.label == label);
+        return sum + (double.tryParse(t.minBilling) ?? 0.0);
+      },
+    );
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -455,8 +464,22 @@ class _TableReservationPageState extends State<TableReservationPage> {
                 ),
                 onPressed: selectedTables.isEmpty
                     ? null
-                    : () {
+                    : /*() {
                         debugPrint("Selected Tables: $selectedTables");
+                      },*/
+                    () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => TableSummaryScreen(
+                                event: widget.event,
+                                selectedTableObjects: selectedTables
+                                    .map((tableLabel) => tables.firstWhere(
+                                        (table) => table.label == tableLabel))
+                                    .toList(),
+                                totalAmount: totalAmount),
+                          ),
+                        );
                       },
                 child: Text(
                   selectedTables.isEmpty

@@ -108,6 +108,605 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     final event = _event!;
 
     return Scaffold(
+        backgroundColor: Colors.black,
+        body: CustomScrollView(
+          slivers: [
+            /// ---------------- SLIVER APP BAR WITH ZOOM PARALLAX ----------------
+            /*  SliverAppBar(
+              expandedHeight: 350,
+              pinned: true,
+              backgroundColor: Colors.grey,
+              foregroundColor: Colors.white,
+              title: Text(event.title),
+              flexibleSpace: LayoutBuilder(
+                builder: (context, constraints) {
+                  double maxHeight = 350;
+                  double minHeight = kToolbarHeight;
+
+                  double expandedRatio = (constraints.maxHeight - minHeight) /
+                      (maxHeight - minHeight);
+
+                  expandedRatio = expandedRatio.clamp(0.1, 1.0);
+
+                  double scale = 1.0 + (0.80 * (1 - expandedRatio));
+
+                  return Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      /// Parallax Zoom Image
+                      Transform.scale(
+                        scale: scale,
+                        child: Image.network(
+                          event.imgPath,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                            color: Colors.grey[950],
+                            child: const Icon(Icons.broken_image,
+                                color: Colors.white54, size: 60),
+                          ),
+                        ),
+                      ),
+
+                      /// Scroll Dim Overlay
+                      Container(
+                        //color:
+                        //   Colors.green.withOpacity((1 - expandedRatio) * 0.5),
+                        decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(30)),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),*/
+            SliverAppBar(
+              expandedHeight: 450,
+              pinned: true,
+              backgroundColor: Colors.black,
+              foregroundColor: Colors.white,
+              flexibleSpace: LayoutBuilder(
+                builder: (context, constraints) {
+                  double maxHeight = 250;
+                  double minHeight = kToolbarHeight;
+
+                  double expandedRatio = (constraints.maxHeight - minHeight) /
+                      (maxHeight - minHeight);
+
+                  expandedRatio = expandedRatio.clamp(0.4, 1.0);
+
+                  double scale = 1.0 + (0.09 * (1 - expandedRatio));
+
+                  bool isCollapsed =
+                      constraints.maxHeight <= kToolbarHeight + 20;
+
+                  return Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      /// Parallax Zoom Image
+                      Transform.scale(
+                        scale: scale,
+                        child: Image.network(
+                          event.imgPath,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                            color: Colors.transparent,
+                            child: const Icon(Icons.broken_image,
+                                color: Colors.white54, size: 60),
+                          ),
+                        ),
+                      ),
+
+                      /// Gradient Bottom Fade
+                      Align(
+                        alignment: Alignment.bottomCenter,
+                        child: Container(
+                          height: 20,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withOpacity(0.6),
+                                Colors.black.withOpacity(0.9),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      /// ⭐ Image bottom-left Title (only when expanded)
+                      Positioned(
+                        left: 46,
+                        bottom: 5,
+                        child: Opacity(
+                          opacity: expandedRatio,
+                          child: Text(
+                            event.title,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                              /* shadows: [
+                                Shadow(
+                                    color: Colors.transparent, blurRadius: 20),
+                              ],*/
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      /// ⭐ AppBar Title when collapsed
+                      if (isCollapsed)
+                        Positioned(
+                          left: 72,
+                          bottom: 12,
+                          child: Text(
+                            event.title,
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ),
+
+            /// ---------------- BODY CONTENT ----------------
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 10),
+
+                    // Slug
+                    if (event.slug.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Text(
+                          event.slug,
+                          style: const TextStyle(
+                            color: Colors.green,
+                            fontSize: 16,
+                            fontStyle: FontStyle.normal,
+                          ),
+                        ),
+                      ),
+
+                    const SizedBox(height: 16),
+
+                    // ---------------- DATE ----------------
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.calendar_today,
+                              color: Colors.green, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            "${event.fromDate.toLocal().toString().split(' ')[0]} → ${event.toDate.toLocal().toString().split(' ')[0]}",
+                            style: const TextStyle(
+                              color: Colors.green,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // ---------------- TIME ----------------
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.access_time,
+                              color: Colors.green, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            "${event.startTime} - ${event.endTime}",
+                            style: const TextStyle(
+                              color: Colors.green,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+                    _divider(),
+
+                    const SizedBox(height: 12),
+
+                    // ---------------- VENUE ----------------
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Text(
+                        "VENUE:",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                        ),
+                      ),
+                    ),
+
+                    if (event.venue.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.location_on,
+                                color: Colors.green, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                event.venue,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    const SizedBox(height: 12),
+                    _divider(),
+
+                    const SizedBox(height: 20),
+
+                    // ---------------- DESCRIPTION ----------------
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Text(
+                        "DESCRIPTION:",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                        ),
+                      ),
+                    ),
+
+                    if (event.description.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Html(
+                          data: event.description,
+                          style: {
+                            "body": Style(
+                              color: Colors.white70,
+                              fontSize: FontSize(15),
+                              lineHeight: LineHeight(1.4),
+                              textAlign: TextAlign.justify,
+                              fontFamily: 'Roboto',
+                            ),
+                          },
+                        ),
+                      ),
+
+                    const SizedBox(height: 12),
+                    _divider(),
+
+                    const SizedBox(height: 20),
+
+                    // ---------------- ARTISTS ----------------
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Text(
+                        "ARTISTS:",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                        ),
+                      ),
+                    ),
+
+                    ListTile(
+                      title: Row(
+                        children: [
+                          _artistButton("Artist 1"),
+                          const SizedBox(width: 20),
+                          _artistButton("Artist 2"),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+                    _divider(),
+
+                    const SizedBox(height: 20),
+
+                    // ---------------- IMAGES ----------------
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Text(
+                        "IMAGES:",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+                    _buildImageRow(context),
+
+                    const SizedBox(height: 30),
+
+                    // ---------------- BOOK NOW ----------------
+                    /*  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.black,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.vertical(top: Radius.circular(20)),
+                          ),
+                          builder: (context) => SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.8,
+                            child: TicketSelectionScreen(event: event),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        "Book Now",
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+*/
+                    const SizedBox(height: 40),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        // ⭐ FIXED BOOK NOW BUTTON ⭐
+        bottomNavigationBar: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: const BoxDecoration(
+            color: Colors.black,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.white24,
+                blurRadius: 8,
+                offset: Offset(0, -2),
+              )
+            ],
+          ),
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              minimumSize: const Size(double.infinity, 52),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                builder: (context) => SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.85,
+                  child: TicketSelectionScreen(event: event),
+                ),
+              );
+            },
+            child: const Text(
+              "Book Now",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ));
+  }
+
+  /// Divider helper
+  Widget _divider() {
+    return Container(
+      height: 1,
+      color: Colors.white24,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+    );
+  }
+}
+
+/// 🔹 Small reusable widgets
+
+Widget _artistButton(String name) {
+  return ElevatedButton(
+    style: ElevatedButton.styleFrom(
+      //backgroundColor: Colors.green,
+      foregroundColor: Colors.white,
+      shadowColor: Colors.transparent,
+      side: const BorderSide(color: Colors.white70),
+    ),
+    onPressed: () {},
+    child: Text(name),
+  );
+}
+
+Widget _buildImageRow(BuildContext context) {
+  final images = [
+    'assets/priscilla-du-preez-W3SEyZODn8U-unsplash.jpg',
+    'assets/pablo-heimplatz-ZODcBkEohk8-unsplash.jpg',
+    'assets/al-elmes-ULHxWq8reao-unsplash.jpg',
+  ];
+
+  final imageWidth = (MediaQuery.of(context).size.width - 64) / 3;
+
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: images
+          .map(
+            (path) => ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.asset(
+                path,
+                width: imageWidth,
+                height: 100,
+                fit: BoxFit.cover,
+              ),
+            ),
+          )
+          .toList(),
+    ),
+  );
+}
+
+/*
+import 'dart:convert';
+import 'package:events_feature/models/event_models.dart';
+import 'package:events_feature/utils/session_manager.dart'; // ✅ Import SessionManager
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'tickets_selection_screen.dart';
+import 'package:flutter_html/flutter_html.dart';
+
+class EventDetailsScreen extends StatefulWidget {
+  final int eventId;
+
+  const EventDetailsScreen({super.key, required this.eventId});
+
+  @override
+  State<EventDetailsScreen> createState() => _EventDetailsScreenState();
+}
+
+class _EventDetailsScreenState extends State<EventDetailsScreen> {
+  EventModel? _event;
+  bool _isLoading = true;
+  String? authToken;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTokenAndFetchEvent();
+  }
+
+  /// 🔹 Load token first, then fetch event details
+  Future<void> _loadTokenAndFetchEvent() async {
+    final session = SessionManager();
+    await session.loadSession();
+
+    setState(() {
+      authToken = session.authToken;
+    });
+
+    debugPrint("🔑 Loaded Token for EventDetails: $authToken");
+
+    if (authToken == null || authToken!.isEmpty) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    await fetchEventDetails();
+  }
+
+  /// 🔹 Fetch Event Details Dynamically
+  Future<void> fetchEventDetails() async {
+    try {
+      final url =
+          "https://white-labels-app-server.vercel.app/api/events/getEventById?event_id=${widget.eventId}";
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {"x-auth-token": authToken!},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body)["data"];
+        setState(() {
+          _event = EventModel.fromJson(data);
+          _isLoading = false;
+        });
+      } else {
+        throw Exception(
+          "Failed to load event details (${response.statusCode})",
+        );
+      }
+    } catch (e) {
+      debugPrint("❌ Error fetching event: $e");
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: CircularProgressIndicator(color: Colors.green)),
+      );
+    }
+
+    if (authToken == null || authToken!.isEmpty) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Text(
+            "Please log in to view event details.",
+            style: TextStyle(color: Colors.white, fontSize: 16),
+          ),
+        ),
+      );
+    }
+
+    if (_event == null) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Text(
+            "Failed to load event details.",
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+    }
+
+    final event = _event!;
+
+    return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
         title: Text(event.title),
@@ -190,6 +789,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+                  /* const SizedBox(height: 6),
+                  Container(
+                    height: 1,
+                    color: Colors.green,
+                    width: double.infinity,
+                  ),*/
                 ],
               ),
             ),
@@ -213,6 +818,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   ),
                 ],
               ),
+            ),
+            const SizedBox(height: 6),
+            Container(
+              height: 1,
+              color: Colors.white30,
+              width: double.infinity,
             ),
 
             const SizedBox(height: 12),
@@ -253,6 +864,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   ],
                 ),
               ),
+            const SizedBox(height: 6),
+            Container(
+              height: 1,
+              color: Colors.white30,
+              width: double.infinity,
+            ),
 
             const SizedBox(height: 20),
 
@@ -284,6 +901,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   },
                 ),
               ),
+            const SizedBox(height: 6),
+            Container(
+              height: 1,
+              color: Colors.white30,
+              width: double.infinity,
+            ),
 
             const SizedBox(height: 20),
 
@@ -309,7 +932,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 ],
               ),
             ),
-
+            const SizedBox(height: 6),
+            Container(
+              height: 1,
+              color: Colors.white30,
+              width: double.infinity,
+            ),
             const SizedBox(height: 20),
 
             // --- Images ---
@@ -414,7 +1042,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 }
-
+*/
 /*
 import 'dart:convert';
 import 'package:events_feature/models/event_models.dart';
@@ -1091,11 +1719,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 }
 */
-
-
-
-
-
 
 /*
 import 'dart:convert';

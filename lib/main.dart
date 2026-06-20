@@ -1,10 +1,9 @@
-import 'package:events_feature/screens/customer_support_screen.dart';
+import 'package:events_feature/firebase_options.dart';
 import 'package:events_feature/screens/home_screen.dart';
-import 'package:events_feature/screens/login_page.dart';
-import 'package:events_feature/screens/tablebokking_screen.dart';
+import 'package:events_feature/screens/splash_screen.dart';
 import 'package:events_feature/utils/session_manager.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:events_feature/utils/auth_manager.dart';
 
 //import 'package:firebase_core/firebase_core.dart';
 //import 'package:shared_preferences/shared_preferences.dart';
@@ -15,6 +14,10 @@ import 'package:events_feature/utils/auth_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   final session = SessionManager();
   await session.loadSession();
@@ -31,7 +34,12 @@ class MyApp extends StatelessWidget {
       title: 'Events Demo Project',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(useMaterial3: true),
-      home: MainHomeScreen(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const SplashScreen(),
+        '/home': (context) => const MainHomeScreen(),
+      },
+      //home: MainHomeScreen(),
       //home: const TableReservationPage(),
       //home: CustomerSupportPage(),
     );

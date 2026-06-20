@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:events_feature/screens/home_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,157 +22,112 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _isLoading = false;
 
-  // ---------------- LOGIN USER ----------------
-  Future<void> _loginUser() async {
-    final String name = _nameController.text.trim();
-    final String phone = _phoneController.text.trim();
-    final String email = _emailController.text.trim();
+  String? _verificationId;
 
-    if (name.isEmpty || phone.isEmpty || email.isEmpty) {
+  Future<void> _loginUser() async {
+    String phone = _phoneController.text.trim();
+
+    if (phone.length != 10) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill all fields")),
+        const SnackBar(content: Text("Enter valid phone number")),
       );
       return;
     }
 
     setState(() => _isLoading = true);
 
-    try {
-      final response = await http.post(
-        Uri.parse("https://white-labels-app-server.vercel.app/api/auth/login"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "name": name,
-          "mobile": phone,
-          "email": email,
-          "club_id": 222,
-        }),
-      );
-
-      print("🔹 Login API Response: ${response.body}");
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data["success"] == true) {
-          _showOTPBottomSheet(phone); // ✅ pass phone for OTP verify
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(data["message"] ?? "Login failed")),
-          );
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Login failed: ${response.statusCode}")),
+    await FirebaseAuth.instance.verifyPhoneNumber(
+      phoneNumber: "+91$phone",
+      verificationCompleted: (
+        PhoneAuthCredential credential,
+      ) async {
+        await FirebaseAuth.instance.signInWithCredential(
+          credential,
         );
-      }
-    } catch (e,s) {
-      print(e);
-      print(s);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
+
+        _navigateToHome();
+      },
+      verificationFailed: (
+        FirebaseAuthException e,
+      ) {
+        setState(() => _isLoading = false);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? "Verification failed")),
+        );
+      },
+      codeSent: (
+        String verificationId,
+        int? resendToken,
+      ) {
+        setState(() => _isLoading = false);
+
+        _verificationId = verificationId;
+
+        _showOTPBottomSheet(phone);
+      },
+      codeAutoRetrievalTimeout: (
+        String verificationId,
+      ) {
+        _verificationId = verificationId;
+      },
+    );
+  }
+
+  Future<void> _verifyOTP(
+    String otp,
+  ) async {
+    try {
+      PhoneAuthCredential credential = PhoneAuthProvider.credential(
+        verificationId: _verificationId!,
+        smsCode: otp,
       );
-    } finally {
-      setState(() => _isLoading = false);
+
+      UserCredential userCredential =
+          await FirebaseAuth.instance.signInWithCredential(
+        credential,
+      );
+
+      User? user = userCredential.user;
+
+      if (user != null) {
+        await FirebaseFirestore.instance.collection("users").doc(user.uid).set({
+          "uid": user.uid,
+          "name": _nameController.text.trim(),
+          "email": _emailController.text.trim(),
+          "phone": user.phoneNumber,
+          "createdAt": FieldValue.serverTimestamp(),
+        });
+
+        final prefs = await SharedPreferences.getInstance();
+
+        await prefs.setString("user_name", _nameController.text);
+        await prefs.setString("user_email", _emailController.text);
+        await prefs.setString("user_phone", user.phoneNumber ?? "");
+
+        Navigator.pop(context);
+        _navigateToHome();
+      }
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.message ?? "Invalid OTP",
+          ),
+        ),
+      );
     }
   }
 
-  // ---------------- VERIFY OTP ----------------
-  Future<void> _verifyOTP(String otp, String mobile) async {
-    setState(() => _isLoading = true);
-
-    try {
-      final response = await http.post(
-        Uri.parse(
-          "https://white-labels-app-server.vercel.app/api/auth/verify-otp",
+  void _navigateToHome() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MainHomeScreen(
+          userName: _nameController.text,
         ),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "otp": otp,
-          "mobile": "91$mobile",
-          "club_id": 222,
-        }),
-      );
-
-      print("🔹 Verify OTP Response: ${response.body}");
-      final data = jsonDecode(response.body);
-
-      if (response.statusCode == 200 && data["success"] == true) {
-        final userData = data["data"] ?? {};
-
-        // ✅ Extract token and user details safely
-        final String? authToken = userData["auth_token"] ??
-            userData["access_token"] ??
-            userData["token"];
-        final String? refreshToken = userData["refresh_token"];
-        final int? clubId = userData["club_id"];
-        final int? userId = userData["user_id"];
-        final String? name = userData["name"];
-        final String? email = userData["email"];
-        final String? phone = userData["mobile"];
-
-        // ✅ Save session values
-        final prefs = await SharedPreferences.getInstance();
-        if (authToken != null) await prefs.setString("auth_token", authToken);
-        if (refreshToken != null) {
-          await prefs.setString("refresh_token", refreshToken);
-        }
-        if (clubId != null) await prefs.setInt("club_id", clubId);
-        if (userId != null) await prefs.setInt("user_id", userId);
-        if (name != null && name.isNotEmpty) {
-          await prefs.setString("user_name", name);
-        } else {
-          await prefs.setString("user_name", _nameController.text.trim());
-        }
-        if (email != null && email.isNotEmpty) {
-          await prefs.setString("user_email", email);
-        } else {
-          await prefs.setString("user_email", _emailController.text.trim());
-        }
-        if (phone != null && phone.isNotEmpty) {
-          await prefs.setString("user_phone", phone);
-        } else {
-          await prefs.setString("user_phone", _phoneController.text.trim());
-        }
-
-        // ✅ Debug print saved session
-        print("✅ Saved Session Data:");
-        print("Token: ${prefs.getString('auth_token')}");
-        print("Club ID: ${prefs.getInt('club_id')}");
-        print("User ID: ${prefs.getInt('user_id')}");
-        print("User Name: ${prefs.getString('user_name')}");
-
-        Navigator.of(context).pop(); // Close OTP sheet
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("✅ Login Successful"),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        // ✅ Navigate to Home Screen
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => MainHomeScreen(
-              userName: prefs.getString("user_name") ?? "Guest",
-            ),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(data["message"] ?? "❌ Invalid OTP"),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error verifying OTP: $e")),
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
+      ),
+    );
   }
 
   // ---------------- UI BUILD ----------------
@@ -522,7 +479,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     String enteredOTP =
                         otpControllers.map((c) => c.text.trim()).join();
                     if (enteredOTP.length == 4) {
-                      _verifyOTP(enteredOTP, mobile);
+                      _verifyOTP(enteredOTP);
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(

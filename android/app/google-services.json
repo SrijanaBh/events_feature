@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "440399601536",
+    "project_id": "whitelabelapp-6fe66",
+    "storage_bucket": "whitelabelapp-6fe66.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:440399601536:android:8165e5e3ea81dd9474ab65",
+        "android_client_info": {
+          "package_name": "com.example.events_feature"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAamuSkHVgrBWIAB6DfyM9G-x0RaxGSfUE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
